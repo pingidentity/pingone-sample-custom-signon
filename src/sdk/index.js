@@ -4,12 +4,11 @@
  */
 import _ from 'lodash';
 
-import { RequiredProperties } from './passwordRequirementsValidation';
+import { RequiredProperties } from './helpers';
 
 export const STATUS = {
   SUCCESS: 'SUCCESS',
   UNAUTHORIZED: 'UNAUTHORIZED',
-  INVALID_CLIENT_AUTH_REQUEST: 'INVALID_CLIENT_AUTH_REQUEST',
 
   COMPLETED: 'COMPLETED',
   USERNAME_PASSWORD_REQUIRED: 'USERNAME_PASSWORD_REQUIRED',
@@ -22,6 +21,8 @@ export const STATUS = {
   PASSWORD_REQUIREMENTS_NOT_MET: 'PASSWORD_REQUIREMENTS_NOT_MET',
   VERIFICATION_CODE_REQUIRED: 'VERIFICATION_CODE_REQUIRED',
   RECOVERY_CODE_REQUIRED: 'RECOVERY_CODE_REQUIRED',
+  INVALID_VALUE: 'INVALID_VALUE',
+  UNIQUENESS_VIOLATION: 'UNIQUENESS_VIOLATION',
   UNKNOWN: 'UNKNOWN',
   FAILED: 'FAILED'
 };
@@ -37,6 +38,18 @@ export class Flow {
 
   getId(){
     return this.id;
+  }
+
+  getEmbedded(){
+    return this._embedded;
+  }
+
+  getResumeUrl(){
+    return this.resumeUrl;
+  }
+
+  getLinks(){
+    return this._links;
   }
 
   isExpired() {

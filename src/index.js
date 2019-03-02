@@ -1,42 +1,39 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import {render} from 'react-dom';
 import {Provider} from 'react-redux';
-import {MemoryRouter} from 'react-router';
+import {BrowserRouter, Route, Switch} from 'react-router-dom';
 import './index.css';
 import config from "./config";
 import AppContainer from './containers/container';
 import * as serviceWorker from './serviceWorker';
 
-import { combineReducers, applyMiddleware, createStore, compose } from 'redux';
+import {applyMiddleware, combineReducers, compose, createStore} from 'redux';
 import thunk from 'redux-thunk';
 import freeze from 'redux-freeze';
-import reducers from './reducers/index';
+import reducer from './reducers/index';
+import Callback from "./components/callback";
 
-const devToolsExtension = window.__REDUX_DEVTOOLS_EXTENSION__ ? window.__REDUX_DEVTOOLS_EXTENSION__() : (f) => f;
-const composeStore = compose(applyMiddleware(thunk, freeze), devToolsExtension)(createStore);
-const store = composeStore(combineReducers(reducers));
+const devToolsExtension = window.__REDUX_DEVTOOLS_EXTENSION__
+    ? window.__REDUX_DEVTOOLS_EXTENSION__() : (f) => f;
+const composeStore = compose(applyMiddleware(thunk, freeze), devToolsExtension)(
+    createStore);
+const store = composeStore(combineReducers(reducer));
 
-const data = {
-  branding: {
-    logo: config.branding.logo
-  },
-  authDetails: {
-    environmentId: config.authDetails.environmentId,
-    responseType: config.authDetails.responseType,
-    clientId: config.authDetails.clientId,
-    redirectUri: config.authDetails.redirectUri,
-    scope: config.authDetails.scope
-  }
-
-}
-
-ReactDOM.render(
+render(
     <Provider store={store}>
-      <MemoryRouter>
-        <AppContainer {...data}/>
-      </MemoryRouter>
+      <BrowserRouter>
+        <Switch>
+          <Route exact path='/callback' render={(routeProps) =>
+              <Callback {...routeProps} {...config}/>}
+          />
+          <Route render={(routeProps) =>
+              <AppContainer {...routeProps}{...config}/>}
+          />
+        </Switch>
+      </BrowserRouter>
     </Provider>,
-    document.getElementById('root'));
+    document.getElementById('root')
+)
 
 // If you want your app to work offline and load faster, you can change
 // unregister() to register() below. Note this comes with some pitfalls.

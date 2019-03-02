@@ -1,6 +1,123 @@
+# Introduction
+
+This sample demonstrates how to initiate login actions that specify the operations required to authenticate with a username and password. It uses PingOne flow orchestration service to authenticate the application or user that initiated the authentication request. 
+This service is responsible for initiating the authentication session and making calls to specific actions required by the authentication workflow.
+
+Flow endpoint operations are used only to implement custom authentication UIs. 
+OIDC/OAuth 2 requests initiate the flow and redirect the browser to the custom authentication UI (which is configured in the application through the application’s `loginPageUrl` property.)
+
+## Choose Application Type
+PingOne supports several application types, but for this one better to implement Single page (runs on the client side after it loads, so it can't keep a client secret) or Native ( typically intended for mobile devices) application type with : auth code,  implicit or refresh token grant types.
+
+The application type determines the authorization flow steps needed to acquire an access token from the authorization service. 
+The following example describe `authorization_code` or `implicit` [authorization flows](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_AuthActivities/p1-a_appAuth/) for the designated application type.
+
+
+__authorization code grant type__
+
+This flow uses the `GET /{environmentId}/flows/{flowId}` endpoint to retrieve the login action steps, and the POST `/{environmentId}/flows/{flowId}/password` endpoint
+ to validate the username and password required by the login action. After all login action steps in the flow are completed, the `GET /{environmentId}/as/resume` endpoint continues processing the authorization request.
+
+`curl --request GET \
+  --url 'https://auth.pingone.com/{environmentID}/as/resume?flowId={flowID}'`
+After restarting the authorization flow, you can submit the authorization code through a request to the `POST /{environmentId}/as/token` endpoint to create the access token.
+
+`curl --request POST \
+  --url 'https://auth.pingone.com/{envID}/as/token' \
+  --header 'Content-Type: application/x-www-form-urlencoded' \
+  --data 'grant_type=authorization_code&code={authCode}&redirect_uri=https%3A%2F%2Fexample.com'`
+The **`grant_type`** and **`code`** parameter values **are required in the request body**. The `redirect_uri` is a required parameter only if it was included in the original `GET /{environmentId}/as/authorize` request.
+
+
+__implicit grant type.__
+
+Application is issued an access token without requiring an authorization code exchange. When the request is made to the `/{environmentId}/as/authorize` endpoint for an implicit grant, the value of the `response_type` parameter is set to `token` or `id_token`.
+After all login action steps in the flow are completed successfully, the `GET /{environmentId}/as/resume` endpoint continues processing the authorization request.
+
+`curl --request GET \
+  --url 'https://auth.pingone.com/{environmentID}/as/resume?flowId={flowID}'`
+The authorization service generates the access token for the application after restarting the authorization flow; it does not require a step to call the `/{environmentId}/as/token` endpoint.
+The `response_type=` **`token`** or **`id_token`** **is required**.
+
+
+# Prerequisites 
+You will need the following things:
+
+- PingOne for Customers Account - If you don’t have an existing one, please register it.
+- An new [Application](https://documentation.pingidentity.com/pingone/p14cAdminGuide/index.shtml#p1_t_addApplication.html), configured for Single-Page App (SPA) or Native mode. Also make sure that it is enabled plus redirect, sign off URL's and access grants by scopes are properly set.
+
+# Getting Started
+
+1. Clone a source code
+`git clone git@github.com:pingidentity/pingone-customers-sample-custom-signon.git . `
+2. Update [config.js](./src/config.js) with your application data extracted from P14C admin console
+3. Build a project by `npm install` or `yarn install`
+4. Start an application by `npm start` or `yarn start`
+
+
+## PingOne for Customers API used in this sample
+### Authentication API:
+|    Endpoint   |    Description   |
+| ------------- |------------- |
+| [`POST /{environmentId}/as/authorize`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Authorize/#Authorization-request-with-a-code-grant) <br>  `prompt=login` parameter is used by default  | Authorization request with a code or implicit grant type.|
+| [`POST /{environmentId}/as/token`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Authorize/#Obtain-an-access-token)  | Obtain an access token in authorization grant case|
+| [`GET /{environmentID}/as/signoff?id_token_hint={idToken}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Authorize/#Get-signoff) <br> if `post_logout_redirect_uri` parameter is provided and it does not match one of the `postLogoutRedirectUri` values of your application in the specified environment - it would be handled as an unpredictable error.  | Obtain an access token in authorization grant case|
+
+### Flow API:
+|    Endpoint   |    Description   |
+| ------------- |------------- |
+| [`GET /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Get-a-flow) <br> `Content-Type: application/json` | Retrieve information about a flow |
+| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Reset-a-flow) <br> `Content-Type: application/vnd.pingidentity.session.reset+json`  | Update (or reset) a flow orchestration session |
+| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Register-a-user) <br> `Content-Type: application/vnd.pingidentity.user.register+json`  | Register a user |
+| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Login-with-username-and-password) <br> `Content-Type: application/vnd.pingidentity.usernamePassword.check+json`  | Login with username and password|
+| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Reset-password) <br> `Content-Type: application/vnd.pingidentity.password.reset+json`  | Change (or reset) the user’s password |
+| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Recover-password) <br> `Content-Type: application/vnd.pingidentity.password.recover+json`  | Recover the account and set a new password |
+| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Send-recovery-code) <br> `Content-Type: application/vnd.pingidentity.password.sendRecoveryCode`  | Send the OTP to the user |
+| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Verify-user) <br> `Content-Type: application/vnd.pingidentity.user.verify+json`  | Verify the user account to continue the authentication flow |
+| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Send-verification-email) <br> `Content-Type: application/vnd.pingidentity.user.sendVerificationCode+json`  | Send the user a new account verification email |
+
+
+# Developer Notes
+
+This sample includes scripts and configuration used by [Create React App](https://github.com/facebook/create-react-app). So you don’t need to install or configure tools like Webpack or Babel.
+They are preconfigured and hidden so that you can focus on the code.
+
+1. In case you want to experience more OIDC and other [PingOne for Customers Management APIs](https://apidocs.pingidentity.com/pingone/customer/v1/api/man/) without enforcing CORS, you can open another instance of chrome with disabled security (without closing other running chrome instances):
+on Mac terminal:
+```bash
+open -n -a "Google Chrome" --args --user-data-dir=/tmp/temp_chrome_user_data_dir http://localhost:3000/ --disable-web-security
+```
+Otherwise you will see such error like *"No 'Access-Control-Allow-Origin' header is present on the requested resource"* on some actions.
+
+
+2. `combineReducers` resulting reducer calls every child reducer, and gathers their results into a single _state_ object. __The state produced by combineReducers() namespaces the states of each reducer under their keys as passed to combineReducers()__
+Example:
+```typescript jsx
+rootReducer = combineReducers({flow: flowReducer, user: userReducer})
+// This would produce the following state object
+{
+  flow: {
+    // ... flow, and other state managed by the flowReducer ...
+  },
+  user: {
+    // ... user, and other state managed by the userReducer ...
+  }
+}
+```
+
+3. `componentDidMount` is only called once in the lifecycle of any component, re-render will not reinitialize the component. `componentDidUpdate` will be called where you can manage your logic.
+4. Redux state doesn't remain after a page reload. `window.location = '/addMembers'` cause a page reload and it's not the correct way to programmatically navigate to another page when you use react-router. Instead of that you should use `this.props.history.push('/addMembers')`.
+
+
+# Best Practises
+1. keep UI state and transitory data (such as form inputs) in local state (i.e [controlled component](https://reactjs.org/docs/forms.html#controlled-components) to fill out a form).
+2. keep data that you intend to share across components in Redux store.
+3. we used [`redux-freeze`](https://www.npmjs.com/package/redux-freeze) middleware that is useful during development mode to ensure that no part of the app accidentally mutates the state (error will be thrown by the runtime).
+
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-## Available Scripts
+# Available Scripts
 
 In the project directory, you can run:
 
@@ -66,113 +183,3 @@ This section has moved here: https://facebook.github.io/create-react-app/docs/de
 ### `npm run build` fails to minify
 
 This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
-
-## Intro
-
-When a user logs in, P14C returns such items:
-
-- access_token: to learn more, see the Access Token documentation
-- token_type: 
-- expires_in: the number of seconds before the Access Token expires
-- scope
-- id_token: to learn more, see the ID Token documentation
-so you can use these items in your application to set up and manage authentication.
-
-
-
-__Flows__
-
-The PingOne flow orchestration service configures the steps required to authenticate the application or user that initiated the authentication request. The service is responsible for initiating the authentication session and making calls to specific actions required by the authentication workflow.
-
-__Flow actions__
-The flow endpoint is used to interact with the end-user in a sign-on workflow. Flow endpoint operations are used only to implement custom authentication UIs. 
-OIDC/OAuth 2 and SAML requests initiate the flow and redirect the browser to the custom authentication UI (which is configured in the application through the application’s loginPageUrl property.)
-
-This sample demonstrates how to initiate login actions that specify the operations required to authenticate with a username and password.
-
-The application type determines the authorization flow steps needed to acquire an access token from the authorization service. 
-The following example describe common [authorization flows](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_AuthActivities/p1-a_appAuth/) for the designated application type.
-
-__authorization code grant type__
-
-This flow uses the `GET /{environmentId}/flows/{flowId}/steps/{stepId}` endpoint to retrieve the login action steps, and the POST `/{environmentId}/flows/{flowId}/steps/{stepId}/password` endpoint
- to validate the username and password required by the login action. After all login action steps in the flow are completed, the `GET /{environmentId}/as/resume` endpoint continues processing the authorization request.
-
-curl --request GET \
-  --url 'https://auth.pingone.com/{environmentID}/as/resume?flowId={flowID}'
-After restarting the authorization flow, you can submit the authorization code through a request to the `POST /{environmentId}/as/token` endpoint to create the access token.
-
-curl --request POST \
-  --url 'https://auth.pingone.com/{envID}/as/token' \
-  --header 'Content-Type: application/x-www-form-urlencoded' \
-  --data 'grant_type=authorization_code&code={authCode}&redirect_uri=https%3A%2F%2Fexample.com'
-The `grant_type` and `code` parameter values are required in the request body. The `redirect_uri` is a required parameter only if it was included in the original `GET /{environmentId}/as/authorize` request.
-
-
-__implicit grant type.__
-
- the application is issued an access token without requiring an authorization code exchange. When the request is made to the /{environmentId}/as/authorize endpoint for an implicit grant, the value of the response_type parameter is set to token or id_token.
-After all login action steps in the flow are completed successfully, the GET /{environmentId}/as/resume endpoint continues processing the authorization request.
-
-curl --request GET \
-  --url 'https://auth.pingone.com/{environmentID}/as/resume?flowId={flowID}'
-The authorization service generates the access token for the application after restarting the authorization flow; it does not require a step to call the /{environmentId}/as/token endpoint.
-
-
-
-|    Grant Type   |    Endpoints |      Details   |
-| ------------- |------------- |------------- |
-| `authorization_code` | GET or POST `/{environmentId}/as/authorize?response_type=code&client_id={appID}&redirect_uri=https://example.com&scope=p1:read:env:population&acr_values=Single_Factor&prompt=login'`| `response_type=code` is required. |
-|
-|    Grant Type   |    Endpoints |      Details   |
-| ------------- |------------- |------------- |
-| `implicit` | GET or POST `/{environmentId}/as/authorize?client_id={applicationID}&redirect_uri=https://example.com&response_type=token id_token&scope=openid profile p1:read:env:population&acr_values=Single_Factormax_age=86400'`| `response_type=` `token` or `id_token` is required.
-                                                                                                                                                                                                                
- |
-|
-
-##Prerequi
-you need to specify the following:
-Configuration for your application and domain
-Response type, to show that you need a user's Access Token and an ID Token after authentication
-Audience and scope, specifying that you need an access_token that can be used to invoke the /userinfo endpoint.
-The URL where you want to redirect your users after authentication.
-
-post_logout_redirect_uri parameter is provided and it does not match one of the postLogoutRedirectUri values of any application in the specified environment, this condition is handled as an un-redirectable error.
-
-## Developer Notes
-
-This sample includes scripts and configuration used by [Create React App](https://github.com/facebook/create-react-app). sp you don’t need to install or configure tools like Webpack or Babel.
-They are preconfigured and hidden so that you can focus on the code.
-
-1. In case you want to experience more OIDC and other [PingOne for Customers Management APIs](https://apidocs.pingidentity.com/pingone/customer/v1/api/man/) without enforcing CORS, you can open another instance of chrome with disabled security (without closing other running chrome instances):
-on Mac terminal:
-```bash
-open -n -a "Google Chrome" --args --user-data-dir=/tmp/temp_chrome_user_data_dir http://localhost:3000/ --disable-web-security
-```
-Otherwise you will see such error like *"No 'Access-Control-Allow-Origin' header is present on the requested resource"* on some actions.
-
-
-2. `combineReducers`  resulting reducer calls every child reducer, and gathers their results into a single _state_ object. __The state produced by combineReducers() namespaces the states of each reducer under their keys as passed to combineReducers()__
-Example:
-```typescript jsx
-rootReducer = combineReducers({flow: flowReducer, user: userReducer})
-// This would produce the following state object
-{
-  flow: {
-    // ... flow, and other state managed by the flowReducer ...
-  },
-  user: {
-    // ... user, and other state managed by the userReducer ...
-  }
-}
-```
-
-3. `componentDidMount` is only called once in the lifecycle of any component, re-render will not reinitialize the component. `componentDidUpdate` will be called where you can manage your logic.
-4. Redux state doesn't remain after a page reload. `window.location = '/addMembers'` cause a page reload and it's not the correct way to programmatically navigate to another page when you use react-router. Instead of that you should use `this.props.history.push('/addMembers')`.
-
-
-### Best practises
-1. keep UI state and transitory data (such as form inputs) in local state (i.e [controlled component](https://reactjs.org/docs/forms.html#controlled-components) to fill out a form).
-2. keep data that you intend to share across components in Redux store.
-3. we used [`redux-freeze`](https://www.npmjs.com/package/redux-freeze) middleware that is useful during development mode to ensure that no part of the app accidentally mutates the state (error will be thrown by the runtime).

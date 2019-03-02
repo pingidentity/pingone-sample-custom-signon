@@ -88,7 +88,6 @@ export const validate = (passwordPolicy, policyCriterion, password) => {
           _.get(passwordPolicy, [RequiredProperties.MIN_CHARACTERS, RequiredProperties.MIN_SPECIAL])
       );
     }
-      // TODO add reference to the Java implementation (version control or package + class name)
     case RequiredProperties.MIN_COMPLEXITY: {
       const guessesPerSecond = 100000000000;
       const secondsInSevenDays = 604800;
@@ -226,9 +225,16 @@ export const generateRequirementsTooltip = (clientValidatedRequirements, flow) =
           );
         });
 
-export default {
-  RequiredProperties,
-  passwordRequirementsValidator,
-  getServerValidatedRequirementMessage,
-  generateRequirementsTooltip,
+export const parseHash = () => {
+  return window.location.hash.replace('#', '').split('&').reduce((prev, item) => {
+    return Object.assign({[item.split('=')[0]]: decodeURIComponent(item.split('=')[1])}, prev);
+  }, {});
 };
+
+export const generateRandomValue = () => {
+  let crypto = window.crypto || window.msCrypto;
+  let D = new Uint32Array(2);
+  crypto.getRandomValues(D);
+  return D[0].toString(36);
+}
+

@@ -1,8 +1,8 @@
 import React from 'react';
 import {Redirect} from 'react-router';
 import PropTypes from "prop-types";
-import {Flow} from "../sdk";
-import {PATH} from './app';
+import {Flow, STATUS} from "../sdk";
+import {PATH} from './auth';
 import _ from "lodash";
 
 class UserLogin extends React.Component {
@@ -35,7 +35,7 @@ class UserLogin extends React.Component {
   handleSubmit() {
     const {
       flow,
-      userActions,
+      authActions,
     } = this.props;
 
     this.setState({
@@ -44,37 +44,34 @@ class UserLogin extends React.Component {
       errorMessage: ''
     });
 
+    if (flow.isCompleted()) {
+      // Redirect to the resume endpoint in case of password recovery or new user registration process completion
+      window.location.assign(flow.resumeUrl);
+      return;
+    }
+
     const validatePasswordObject = _.get(flow.getLinks(), 'usernamePassword.check', null);
     const validatePasswordUrl = _.get(validatePasswordObject, 'href', null);
 
     if (!validatePasswordUrl) {
-      return userActions.unrecoverableError(new Error('An unexpected error has occurred'));
+      return authActions.unrecoverableError(new Error('An unexpected error has occurred'));
     }
 
-    return userActions.signOn(validatePasswordUrl, this.state.username, this.state.password)
+    return authActions.signOn(validatePasswordUrl, this.state.username, this.state.password)
     .then((newflow) => {
       this.setState({
         isSubmitting: false
       });
-
-      if (newflow.status === 'COMPLETED') {
-        // Redirect to the resume endpoint
-        this.props.history.push(newflow.resumeUrl);
-      }
       return Promise.resolve(newflow);
-    })
-    .then((newflow) => {
-
-      userActions.updateFlow(newflow, true);
     })
     .catch((err) => {
       const errorDetail = _.get(err, 'details[0].code', null);
-      if (errorDetail === PATH.INVALID_CREDENTIALS) {
+      if (_.isEqual(errorDetail, STATUS.INVALID_CREDENTIALS)) {
         this.setState({
           errorMessage: 'Incorrect username or password. Please try again.',
           isSubmitting: false,
         });
-      } else if (errorDetail === PATH.PASSWORD_LOCKED_OUT) {
+      } else if (_.isEqual(errorDetail, STATUS.PASSWORD_LOCKED_OUT)) {
         const secondsUntilUnlock = _.get(err, 'details[0].innerError.secondsUntilUnlock', null);
         const timeUntilUnlockMsg = (secondsUntilUnlock > 60)
             ? (
@@ -107,51 +104,45 @@ class UserLogin extends React.Component {
   handleResetFlow(){
     const {
       flow,
-      userActions,
+      authActions,
     } = this.props;
 
     const resetFlowObject = _.get(flow.getLinks(), 'session.reset', null);
     const resetFlowUrl = _.get(resetFlowObject, 'href', null);
 
     if (!resetFlowUrl) {
-      return userActions.unrecoverableError(new Error('An unexpected error has occurred'));
+      return authActions.unrecoverableError(new Error('An unexpected error has occurred'));
     }
 
-    return userActions.resetFlow(resetFlowUrl);
+    return authActions.resetFlow(resetFlowUrl);
   }
 
   handleForgotPassword() {
-    //const redirect = <Redirect from={PATH.SING_ON} to={PATH.FORGOT_PASSWORD_USERNAME} />;
     this.setState({
       redirect: (<Redirect from={PATH.SING_ON} to={PATH.FORGOT_PASSWORD_USERNAME} />)
     });
   }
 
   handleRegister() {
-    const redirect = <Redirect from={PATH.SING_ON} to={PATH.REGISTER}/>;
     this.setState({
-      redirect
+      redirect: (<Redirect from={PATH.SING_ON} to={PATH.REGISTER}/>)
     });
   }
 
   handlePasswordReset() {
-    const redirect = <Redirect from={PATH.SING_ON} to={PATH.CHANGE_PASSWORD}/>;
     this.setState({
-      redirect
+      redirect: (<Redirect from={PATH.SING_ON} to={PATH.CHANGE_PASSWORD}/>)
     });
   }
 
   render() {
-    const { username, password, redirect } = this.state;
+    const { username, password, redirect, errorMessage } = this.state;
     const { flow, message } = this.props;
 
-    const errorAlert = message && message.isError
-        ? (
-            <div className="input-field">
-              <div className="alert alert-danger">{message.content}</div>
-            </div>
-        )
-        : null;
+    const alert = (errorMessage || message ) && (
+        (errorMessage || (message && message.isError)) ? (<div className="alert alert-danger">{errorMessage ? errorMessage : message.content}</div>) :
+            <div className="alert alert-success">{message.content}</div>
+    );
 
     if(flow) {
 
@@ -198,7 +189,7 @@ class UserLogin extends React.Component {
       return (
           <div>
             {redirect}
-            {errorAlert}
+            {alert}
             <div className="login-step-app">
               <form>
                 <div
@@ -279,7 +270,7 @@ class UserLogin extends React.Component {
 }
 
 UserLogin.propTypes = {
-  userActions: PropTypes.shape({
+  authActions: PropTypes.shape({
     signOn: PropTypes.func.isRequired,
     forgotPassword: PropTypes.func.isRequired,
     resetFlow: PropTypes.func.isRequired,

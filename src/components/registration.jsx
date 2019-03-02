@@ -2,9 +2,9 @@ import React from 'react';
 import _ from 'lodash';
 import PropTypes from 'prop-types';
 import { Redirect } from 'react-router';
-import { PATH } from './app';
-import { getServerValidatedRequirementMessage, generateRequirementsTooltip, passwordRequirementsValidator as validator } from '../sdk/passwordRequirementsValidation';
-import {Flow} from "../sdk";
+import { PATH } from './auth';
+import { getServerValidatedRequirementMessage, generateRequirementsTooltip, passwordRequirementsValidator as validator } from '../sdk/helpers';
+import {Flow, STATUS} from "../sdk";
 
 class RegistrationForm extends React.Component {
   constructor(props) {
@@ -34,28 +34,28 @@ class RegistrationForm extends React.Component {
 
   handleSubmit(event) {
     event.preventDefault();
-    const { flow, userActions } = this.props;
+    const { flow, authActions } = this.props;
     const { username, email, password } = this.state;
 
     const registrationObject = _.get(flow.getLinks(), 'user.register', null);
     const registrationLink = _.get(registrationObject, 'href', null);
 
     if (registrationLink === null) {
-      return userActions.unrecoverableError(new Error('An unexpected error has occurred'));
+      return authActions.unrecoverableError(new Error('An unexpected error has occurred'));
     }
 
     this.setState({
       isRegistering: true,
     });
 
-    return userActions.registerUser(registrationLink, username, email, password)
-      .then((newflow) => {
+    return authActions.registerUser(registrationLink, username, email, password)
+      .then(newFlow => {
         this.setState({
           isRegistering: false,
         });
 
-        userActions.updateFlow(newflow);
-        return Promise.resolve(newflow);
+        authActions.updateFlow(newFlow, false, 'You successfully registered, '+ _.get(newFlow, '_embedded.user.username', ''));
+        return Promise.resolve(newFlow);
       })
       .catch((err) => {
         this.setState({
@@ -63,7 +63,7 @@ class RegistrationForm extends React.Component {
         });
         const errorDetail = _.get(err, 'details[0].code', null);
 
-        if (_.isEqual(errorDetail, 'INVALID_VALUE')) {
+        if (_.isEqual(errorDetail, STATUS.INVALID_VALUE)) {
           const errorTarget = _.get(err, 'details[0].target', null);
 
           if (_.isEqual(errorTarget, 'username')) {
@@ -92,7 +92,7 @@ class RegistrationForm extends React.Component {
               errorMessage: 'An unexpected error has occurred.',
             });
           }
-        } else if (_.isEqual(errorDetail, 'UNIQUENESS_VIOLATION')) {
+        } else if (_.isEqual(errorDetail, STATUS.UNIQUENESS_VIOLATION)) {
           this.setState({
             errorMessage: 'Username already taken.',
           });
@@ -137,7 +137,7 @@ class RegistrationForm extends React.Component {
 
   handleSignInClick() {
     this.setState({
-      redirect: <Redirect from={PATH.REGISTER} to={PATH.SING_ON} />,
+      redirect: (<Redirect from={PATH.REGISTER} to={PATH.SING_ON} />)
     });
   }
 
@@ -167,20 +167,17 @@ class RegistrationForm extends React.Component {
       requirementsMet,
     } = this.state;
 
-    const { flow } = this.props;
+    const { flow, message } = this.props;
 
     const doPasswordsDiffer = password !== passwordVerify;
     const isReady = !!(username && email && password && passwordVerify && !doPasswordsDiffer && requirementsMet);
 
     const requirementsTooltip = generateRequirementsTooltip(clientValidatedRequirements, flow);
 
-    const errorAlert = errorMessage ?
-      (
-        <div className="alert alert-danger">
-        {errorMessage}
-        </div>
-      ) :
-      null;
+    const alert = (errorMessage || message ) && (
+        (errorMessage || (message && message.isError)) ? (<div className="alert alert-danger">{errorMessage ? errorMessage : message.content}</div>) :
+            <div className="alert alert-info">{message.content}</div>
+    );
 
     return isRegistering ?
         <div className="alert"> Registering...</div> :
@@ -191,7 +188,7 @@ class RegistrationForm extends React.Component {
             <div className="input-field">
               Enter the required information below.
             </div>
-          {errorAlert}
+          {alert}
           <form className="form" onSubmit={this.onSubmit}>
             <div className="input-field">
                 <label>Username</label>
@@ -256,7 +253,7 @@ class RegistrationForm extends React.Component {
             </div>
             <button
               data-id="register-button"
-              className="button button--primary brand-primary-bg"
+              className="button"
               onClick={this.handleSubmit}
               type="submit"
               disabled={!isReady}
@@ -274,7 +271,7 @@ class RegistrationForm extends React.Component {
 
 RegistrationForm.propTypes = {
   flow: PropTypes.instanceOf(Flow).isRequired,
-  userActions: PropTypes.shape({
+  authActions: PropTypes.shape({
     updateFlow: PropTypes.func.isRequired,
   }).isRequired,
 };

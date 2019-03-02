@@ -1,9 +1,9 @@
 import _ from 'lodash';
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Flow} from "../sdk";
+import {Flow, STATUS} from "../sdk";
 import {Redirect} from "react-router";
-import {PATH} from "./app";
+import {PATH} from "./auth";
 
 class VerificationCode extends React.Component {
   constructor(props) {
@@ -32,7 +32,7 @@ class VerificationCode extends React.Component {
     event.preventDefault();
     const {
       flow,
-      userActions,
+      authActions,
     } = this.props;
     const { verificationCode } = this.state;
     this.setState({
@@ -42,23 +42,23 @@ class VerificationCode extends React.Component {
     const verifyLink = _.get(flow.getLinks()['user.verify'], 'href', null);
 
     if (!verifyLink) {
-      return userActions.unrecoverableError(new Error('An unexpected error has occurred'));
+      return authActions.unrecoverableError(new Error('An unexpected error has occurred'));
     }
 
-    return userActions.verifyUser(verifyLink, verificationCode)
+    return authActions.verifyUser(verifyLink, verificationCode)
       .then((newloginFlow) => {
         this.setState({
           isVerifying: false,
         });
 
-        userActions.updateFlow(newloginFlow);
+        authActions.updateFlow(newloginFlow);
         return Promise.resolve();
       })
       .catch((err) => {
         this.setState({ isVerifying: false });
 
         const errorDetail = _.get(err, 'details[0].code', null);
-        if (_.isEqual(errorDetail, 'INVALID_VALUE')) {
+        if (_.isEqual(errorDetail, STATUS.INVALID_VALUE)) {
           const errorTarget = _.get(err, 'details[0].target', null);
           if (errorTarget === 'verificationCode') {
             this.setState({
@@ -79,30 +79,32 @@ class VerificationCode extends React.Component {
       });
   }
 
-
   handleCancel(event) {
     event.preventDefault();
     this.setState({
-      redirect: <Redirect to={PATH.FORGOT_PASSWORD_USERNAME} />,
+      redirect: (<Redirect to={PATH.FORGOT_PASSWORD_USERNAME} />),
       isVerifying: false,
     });
     return Promise.resolve();
   }
 
   handleResendEmail() {
-    const { flow, userActions } = this.props;
+    const { flow, authActions } = this.props;
     const sendVerificationCodeHref = _.get(flow.getLinks()['user.sendVerificationCode'], 'href', null);
 
     if (!sendVerificationCodeHref) {
-      return userActions.unrecoverableError(new Error('An unexpected error has occurred'));
+      this.setState({
+        errorMessage: 'An unexpected error has occurred.',
+      });
+      return authActions.unrecoverableError(new Error('An unexpected error has occurred'));
     }
 
     this.setState({ isResending: true });
 
-    return userActions.sendVerificationCode(sendVerificationCodeHref)
-      .then((newloginFlow) => {
+    return authActions.sendVerificationCode(sendVerificationCodeHref)
+      .then((newFlow) => {
         this.setState({ errorMessage: '', isResending: false });
-        Promise.resolve(newloginFlow);
+        Promise.resolve(newFlow);
       })
       .catch((err) => {
         this.setState({
@@ -115,17 +117,19 @@ class VerificationCode extends React.Component {
 
   render() {
     const { verificationCode, isVerifying, errorMessage, isResending, redirect  } = this.state;
+    const { message } = this.props;
 
     const isReady = !!verificationCode;
 
-    const errorAlert = errorMessage && (
-      <div className="alert alert-danger">{errorMessage}</div>
+    const alert = (errorMessage || message ) && (
+        (errorMessage || (message && message.isError)) ? (<div className="alert alert-danger">{errorMessage ? errorMessage : message.content}</div>) :
+            <div className="alert alert-success">{message.content}</div>
     );
 
     const spinnerMessage = isResending ? 'Resending verification code...' : 'Verifying...';
 
     return isVerifying || isResending ?
-        <div className="alert-info">
+        <div className="alert alert-info">
           {spinnerMessage}
           <span className="loader"></span>
         </div> :
@@ -133,12 +137,12 @@ class VerificationCode extends React.Component {
         <div>
           {redirect}
           <h1 className="heading" data-id="verification-heading">Thank You!</h1>
-          {errorAlert}
+          {alert}
           <div className="input-field">
-              <p>
+              <div className="alert alert-info">
               We&#39;ve sent a verification email to your email address.
               Please verify your email to finish setting up your PingOne account.
-              </p>
+              </div>
 
               <form className="form" onSubmit={this.onSubmit}>
                 <div className="input-field">
@@ -156,7 +160,7 @@ class VerificationCode extends React.Component {
                 <div className="input-field">
                   <button
                       data-id="verify-button"
-                      className="button button--primary brand-primary-bg"
+                      className="button"
                       onClick={this.handleSubmit}
                       type="submit"
                       disabled={!isReady}>
@@ -183,7 +187,7 @@ class VerificationCode extends React.Component {
 
 VerificationCode.propTypes = {
   flow: PropTypes.instanceOf(Flow).isRequired,
-  userActions: PropTypes.shape({
+  authActions: PropTypes.shape({
     updateFlow: PropTypes.func.isRequired,
     sendVerificationCode: PropTypes.func.isRequired,
     verifyUser: PropTypes.func.isRequired,

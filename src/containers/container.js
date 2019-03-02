@@ -3,15 +3,15 @@ import { connect } from 'react-redux';
 import { withRouter } from 'react-router-dom';
 
 import actions from '../sdk/actions';
-import App from '../components/app';
+import Auth from '../components/auth';
 
 const mapStateToProps = (state) => ({
-  flowState: _.get(state, 'flow', null)
+  authState: _.get(state, 'auth', null)
 });
 
 const mapDispatchToProps = (dispatch) => ({
-  userActions: actions.bind(dispatch),
+  authActions: actions.bind(dispatch),
 });
 
-export default withRouter(connect(mapStateToProps, mapDispatchToProps)(App));
+export default withRouter(connect(mapStateToProps, mapDispatchToProps)(Auth));
 

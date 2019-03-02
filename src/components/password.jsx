@@ -2,10 +2,10 @@ import _ from 'lodash';
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Redirect } from 'react-router';
-import { PATH } from './app';
-import { Flow } from '../sdk/index';
+import { PATH } from './auth';
+import {Flow, STATUS} from '../sdk/index';
 
-import { passwordRequirementsValidator as validator, getServerValidatedRequirementMessage, generateRequirementsTooltip } from '../sdk/passwordRequirementsValidation';
+import { passwordRequirementsValidator as validator, getServerValidatedRequirementMessage, generateRequirementsTooltip } from '../sdk/helpers';
 
 class PasswordEditor extends React.Component {
   constructor(props) {
@@ -53,7 +53,7 @@ class PasswordEditor extends React.Component {
   handleSubmit(event) {
     event.preventDefault();
     const { currentPassword, newPasswordVerify, newPassword } = this.state;
-    const { flow, userActions } = this.props;
+    const { flow, authActions } = this.props;
 
     const changePasswordObject = _.get(flow.getLinks(), 'password.reset', null);
     const changePasswordUrl = _.get(changePasswordObject, 'href', null);
@@ -70,16 +70,16 @@ class PasswordEditor extends React.Component {
     }
 
     if (changePasswordUrl === null) {
-      return userActions.unrecoverableError(new Error('An unexpected error has occurred'));
+      return authActions.unrecoverableError(new Error('An unexpected error has occurred'));
     }
 
     //  Initiate an action to change (or reset) the user’s password.
     return new Promise((resolved) => this.setState({ isValidatingCredentials: true }, () => resolved()))
-      .then(() => userActions.changeUserPassword(changePasswordUrl, currentPassword, newPassword))
+      .then(() => authActions.changeUserPassword(changePasswordUrl, currentPassword, newPassword))
       .catch((err) => {
         const errorDetail = _.get(err, 'details[0].code', null);
 
-        if (_.isEqual(errorDetail, 'INVALID_VALUE')) {
+        if (_.isEqual(errorDetail, STATUS.INVALID_VALUE)) {
           const errorTarget = _.get(err, 'details[0].target', null);
 
           if (_.isEqual(errorTarget, 'currentPassword')) {
@@ -111,7 +111,7 @@ class PasswordEditor extends React.Component {
               errorMessage: 'An unexpected error has occurred.',
             });
           }
-        } else if (_.isEqual(errorDetail, 'PASSWORD_LOCKED_OUT')) {
+        } else if (_.isEqual(errorDetail, STATUS.PASSWORD_LOCKED_OUT)) {
           this.setState({
             redirect: (<Redirect
               from={PATH.CHANGE_PASSWORD}
@@ -159,28 +159,28 @@ class PasswordEditor extends React.Component {
       newPasswordFocused,
     } = this.state;
 
-    const { flow, feedbackMessage } = this.props;
+    const { flow, feedbackMessage, message } = this.props;
 
     const requirementsTooltip = generateRequirementsTooltip(clientValidatedRequirements, flow);
 
-    const errorAlert = errorMessage ?
-      (
-        <div className="alert alert-danger">
-        {errorMessage}
-        </div>
-      ) :
-      null;
+    const alert = (errorMessage || message ) && (
+        (errorMessage || (message && message.isError)) ? (<div className="alert alert-danger">{errorMessage ? errorMessage : message.content}</div>) :
+            <div className="alert alert-success">{message.content}</div>
+    );
 
     const doPasswordsDiffer = newPassword && newPasswordVerify && !_.isEqual(newPassword, newPasswordVerify);
 
     return isValidatingCredentials ?
-      <div className="alert"> Waiting </div> :
+        <div className="alert alert-info">
+          Processing changing password request...
+          <span className="loader"></span>
+        </div>:
       (
         <div>
           {redirect}
           <h1 className="heading">Change Password</h1>
             <div className="alert alert-info">{feedbackMessage}</div>
-          {errorAlert}
+          {alert}
           <form className="form" onSubmit={this.handleSubmit}>
             <div className="input-field">
               <label>Current Password</label>
@@ -230,7 +230,7 @@ class PasswordEditor extends React.Component {
               />
             </div>
             <button
-              className="button button--primary brand-primary-bg"
+              className="button"
               disabled={!currentPassword || !newPassword || !newPasswordVerify || doPasswordsDiffer || !requirementsMet}
               type="submit"
             >
@@ -244,7 +244,7 @@ class PasswordEditor extends React.Component {
 
 PasswordEditor.propTypes = {
   flow: PropTypes.instanceOf(Flow).isRequired,
-  userActions: PropTypes.shape({
+  authActions: PropTypes.shape({
     changeUserPassword: PropTypes.func.isRequired,
   }).isRequired,
   feedbackMessage: PropTypes.string.isRequired

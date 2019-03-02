@@ -1,6 +1,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Redirect, Route} from 'react-router';
+import _ from 'lodash';
+import { parseHash, generateRandomValue } from '../sdk/helpers'
+
 import UserLogin from './userLogin';
 import ForgotPassword from './forgotPassword'
 import MessageBlock from './message'
@@ -8,14 +11,8 @@ import PasswordEditor from './password'
 import RecoveryCodeAndPasswordForm from './recoveryCodeAndPassword'
 import RegistrationForm from './registration'
 import VerificationCode from './verificationCode'
-import _ from 'lodash';
-import Callback from "./callback";
 
 export const PATH = {
-  ERROR: '/error',
-
-  CALLBACK: '/callback',
-
   SING_ON: '/',
   EXPIRED: '/expired',
   UNABLE_TO_SIGN_IN: '/unableToSignIn',
@@ -36,86 +33,88 @@ export const STATUS_TO_COMPATIBLE_PATHS = {
   PASSWORD_REQUIRED: [PATH.SING_ON],
   RECOVERY_CODE_REQUIRED: [PATH.RECOVERY_CODE_AND_PASSWORD],
   VERIFICATION_CODE_REQUIRED: [PATH.VERIFY],
-  COMPLETED: [PATH.CALLBACK],
+  COMPLETED: [PATH.SING_ON]
 };
 
-class App extends React.Component {
+class Auth extends React.Component {
+
+  componentDidUpdate() {
+    this.authenticate();
+  }
 
   componentDidMount() {
-    const {flowState, authDetails, userActions} = this.props;
+    this.authenticate();
+  }
+
+  authenticate(){
+    const {authState, authDetails, authActions} = this.props;
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-    const flow = flowState.flow;
+    const flow = authState.flow;
     const error = window.location.href.includes('&error=');
     const signedOff = window.location.hash === '#signedOff';
+    const notSigned = !/access_token|id_token|error|done/.test(window.location.hash);
 
     if (!uuidRegex.test(authDetails.environmentId)) {
-      userActions.unrecoverableError(new Error(
+      authActions.unrecoverableError(new Error(
           `Invalid environmentId parameter: it should be a valid UUID.`));
     } else if (!error && !signedOff && flow && !uuidRegex.test(flow.id)) {
-      userActions.unrecoverableError(new Error(
+      authActions.unrecoverableError(new Error(
           `Invalid flowId parameter: ${flow.id}. flowId should be a valid UUID.`));
-    } else if (!flow && !/access_token|id_token|error|done/.test(window.location.hash)) {
-      let state = this.generateRandomValue();
+    } else if (!flow && notSigned) {
+      let state = generateRandomValue();
       sessionStorage.setItem("state", state);
 
-      userActions.clientAuth(authDetails.environmentId,
+      authActions.authorize(authDetails.environmentId,
           authDetails.responseType, authDetails.clientId,
           authDetails.redirectUri, authDetails.scope, state);
     }
   }
 
-  generateRandomValue () {
-    let crypto = window.crypto || window.msCrypto;
-    let D = new Uint32Array(2);
-    crypto.getRandomValues(D);
-    return D[0].toString(36);
-  }
-
   render() {
-    const {flowState, location, branding, userActions, authDetails} = this.props;
+    const {authState, location, branding} = this.props;
 
-    if (/signedOff/.test(window.location.hash)) {
+    if (/error/.test(window.location.hash)) {
+      let errorMsg = parseHash();
+      return <MessageBlock messageType={"error"} message={errorMsg.error + ': ' + errorMsg.error_description}/>;
+    } else if (/signedOff/.test(window.location.hash)) {
       return <MessageBlock messageType={"success"} message="You successfully signed off and you can now close this browser tab."/>;
     }
-    else if (/access_token|id_token|error|done/.test(window.location.hash)) {
-      return (
-          <div>
-            <Callback userActions={userActions} authDetails={authDetails}/>
-          </div>
-      );
+    else if (!_.isEmpty(window.location.search)){
+      // Clear current history entry before further operations
+      window.history.replaceState({}, '', '/');
     }
 
-    const unrecoverableError = _.get(flowState, 'unrecoverableError', null);
+    const message = _.get(authState, 'message', null);
+    const unrecoverableError = _.get(authState, 'unrecoverableError', null);
 
-    const flow = _.get(flowState, 'flow', null);
-    const isAuthenticated = _.get(flowState, 'isAuthenticated', null);
-    const message = _.get(flowState, 'message', null);
-
-    if (unrecoverableError) {
-      return <MessageBlock messageType={"error"} message={unrecoverableError}/>;
+    if (unrecoverableError || (message && message.isError)) {
+      return <MessageBlock messageType={"error"} message={unrecoverableError ? unrecoverableError : message.content}/>;
     }
+
+    const flow = _.get(authState, 'flow', null);
+    const isAuthenticated = _.get(authState, 'isAuthenticated', null);
 
     if (flow) {
-
-      const currentViewPath = STATUS_TO_COMPATIBLE_PATHS[_.get(flow, 'status',
-          'unknown')];
-      if (!currentViewPath && !isAuthenticated) {
+      const currentViewPath = STATUS_TO_COMPATIBLE_PATHS[_.get(flow, 'status', 'unknown')];
+      // Check there other than sign on flows were completed, like reset password or new user creation
+      const notSignOnFlowCompleted = !isAuthenticated && flow.isCompleted() && !_.isEqual(location.pathname, PATH.SING_ON);
+      if ( !currentViewPath || notSignOnFlowCompleted) {
         return (<div>
           <Redirect to={PATH.SING_ON}/>
         </div>);
-      } else if (!(_.some(currentViewPath, (path) => _.startsWith(location.pathname, path)))) {
+      } else if (!(_.some(currentViewPath, (path) => _.startsWith(path, location.pathname))) && !isAuthenticated) {
         return (<div>
          <Redirect to={currentViewPath[0]}/>
         </div>)
       }
 
-      if (flow.isCompleted()) {
+      if (flow.isCompleted() && isAuthenticated) {
         // Redirect to the resume endpoint
         window.location.assign(flow.resumeUrl);
+        return null;
       }
-
     }
 
     return flow && (
@@ -184,27 +183,16 @@ class App extends React.Component {
                     />)
                 }
             />
-            <Route
-                path={PATH.CALLBACK}
-                exact
-                render={(routeProps) =>
-                    (<Callback
-                        {...routeProps}{...this.props}
-                    />
-                    )
-                }
-            />
             <Route path={PATH.UNABLE_TO_SIGN_IN} exact
                    component={MessageBlock}/>
           </div>
-          {/*{redirect}*/}
         </div>
     );
   }
 
 };
 
-App.propTypes = {
+Auth.propTypes = {
   location: PropTypes.shape({
     state: PropTypes.shape({
       currentPassword: PropTypes.string,
@@ -219,16 +207,21 @@ App.propTypes = {
   authDetails: PropTypes.shape({
     environmentId: PropTypes.string.isRequired,
     clientId: PropTypes.string.isRequired,
+    clientSecret: PropTypes.string,
     scope: PropTypes.string.isRequired,
+    grantType: PropTypes.string,
+    prompt: PropTypes.string,
     responseType: PropTypes.string.isRequired,
-    redirectUri: PropTypes.string
+    redirectUri: PropTypes.string.isRequired,
+    logoutRedirectUri: PropTypes.string
   }).isRequired,
 
-  userActions: PropTypes.shape({
-    changeUserPassword: PropTypes.func.isRequired,
+  authActions: PropTypes.shape({
+    unrecoverableError: PropTypes.func.isRequired,
+    authorize: PropTypes.func.isRequired,
   }).isRequired,
 
-  flowState: PropTypes.shape({
+  authState: PropTypes.shape({
     flow: PropTypes.shape({
       status: PropTypes.string,
     }),
@@ -236,8 +229,8 @@ App.propTypes = {
   }),
 };
 
-App.defaultProps = {
-  flowState: null,
+Auth.defaultProps = {
+  authState: null,
 };
 
-export default App;
+export default Auth;

@@ -1,28 +1,36 @@
-const dev = {
+const common = {
   branding: {
     logo: require('./logo-pingidentity.png')
   },
   authDetails: {
-    environmentId: "c2c2b4f8-c3da-4b23-abef-457ceaf25591",
-    responseType: "token id_token",
-    clientId: "1eb1030b-36fc-4584-a0c5-6366a539f73a",
+    environmentId: <environmentId>,
+    responseType: <responseType>,
+    clientId: <clientId>,
+    clientSecret: <clientSecret>,
     redirectUri: "http://localhost:3000/callback",
-    //p1:reset:self:userPassword,p1:read:self:userPassword,p1:read:self:user,p1:update:self:user p1:validate:self:userPassword
-    scope: "openid profile address email phone"
-  }
+    logoutRedirectUri: "http://localhost:3000",
+    scope: "profile address email phone"
+  },
 };
 
+const stg = {
+  AUTH: 'https://auth-staging.pingone.com',
+  API: 'https://api-staging.pingone.com/v1/environments'
+};
 
 const prod = {
+  AUTH: 'https://auth.pingone.com',
+  API: 'https://api.pingone.com/v1/environments'
 };
 
-// Default to dev if not set
-const config = process.env.REACT_APP_STAGE === 'prod'
-    ? prod
-    : dev;
+// Default to prod if not set
+let config = prod;
+if (process.env.REACT_APP_STAGE === 'stg') {
+  config = stg;
+}
 
 export default {
   // Add common config values here
-  MAX_ATTACHMENT_SIZE: 5000000,
+  ...common,
   ...config
 };
