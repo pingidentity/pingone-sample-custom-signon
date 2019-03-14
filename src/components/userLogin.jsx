@@ -54,7 +54,10 @@ class UserLogin extends React.Component {
     const validatePasswordUrl = _.get(validatePasswordObject, 'href', null);
 
     if (!validatePasswordUrl) {
-      return authActions.unrecoverableError(new Error('An unexpected error has occurred'));
+      this.setState({
+        errorMessage: 'An unexpected error has occurred. There is no user validation link in the flow.',
+      });
+      return;
     }
 
     return authActions.signOn(validatePasswordUrl, this.state.username, this.state.password)
@@ -111,10 +114,19 @@ class UserLogin extends React.Component {
     const resetFlowUrl = _.get(resetFlowObject, 'href', null);
 
     if (!resetFlowUrl) {
-      return authActions.unrecoverableError(new Error('An unexpected error has occurred'));
+      this.setState({
+        errorMessage: 'An unexpected error has occurred. There is no session reset link in the flow.',
+      });
+      return;
     }
 
-    return authActions.resetFlow(resetFlowUrl);
+    return authActions.resetFlow(resetFlowUrl)
+    .catch(err => {
+      this.setState({
+        errorMessage: `An unexpected error has occurred. ${err}`,
+      })
+      return Promise.resolve(err);
+    });
   }
 
   handleForgotPassword() {
@@ -273,8 +285,7 @@ UserLogin.propTypes = {
   authActions: PropTypes.shape({
     signOn: PropTypes.func.isRequired,
     forgotPassword: PropTypes.func.isRequired,
-    resetFlow: PropTypes.func.isRequired,
-    unrecoverableError: PropTypes.func.isRequired
+    resetFlow: PropTypes.func.isRequired
   }).isRequired,
   flow: PropTypes.instanceOf(Flow).isRequired
 };

@@ -43,7 +43,7 @@ class ForgotPassword extends React.Component {
 
       } else {
         this.setState({
-          errorMessage: 'An unexpected error has occurred.',
+          errorMessage: 'An unexpected error has occurred while processing password recovery request.',
         });
       }
       return Promise.reject(error);

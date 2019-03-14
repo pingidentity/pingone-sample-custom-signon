@@ -17,14 +17,6 @@ const updateFlowAction = (result, isAuthenticated = false, message = null) => ({
   }
 });
 
-const throwError = (error) => ({
-      type: types.UNRECOVERABLE_ERROR,
-      payload: {
-        error: error
-      }
-    }
-);
-
 const updateFlow = (dispatch) => (result = null, isAuthenticated = false, message = null) => {
   return dispatch(updateFlowAction(result ? new Flow(result): result, isAuthenticated, message));
 }
@@ -34,9 +26,6 @@ const resetFlow = (dispatch) => (apiPath) => {
   .then((flow) => {
     dispatch(updateFlowAction(new Flow(flow)));
     return Promise.resolve(flow);
-  })
-  .catch((error) => {
-    dispatch(throwError(error));
   })
 }
 
@@ -49,9 +38,6 @@ const authorize = (dispatch) => (environmentId, responseType, clientId,
     dispatch(updateFlowAction(new Flow(flow)));
     return Promise.resolve(flow);
   })
-  .catch(error => {
-    dispatch(throwError(error));
-  });
 }
 
 const signOn = (dispatch) => (apiPath, username, password) => {
@@ -124,13 +110,8 @@ const registerUser = (dispatch) => (apiPath, username, email, password) => {
   })
 }
 
-const unrecoverableError = (dispatch) => (error) => {
-  dispatch(throwError(error));
-}
-
 export default {
   types,
-  unrecoverableError,
 
   bind: (dispatch) => ({
     signOn: signOn(dispatch),
@@ -144,7 +125,6 @@ export default {
     verifyUser: verifyUser(dispatch),
     registerUser: registerUser(dispatch),
 
-    unrecoverableError: unrecoverableError(dispatch),
     updateFlow: updateFlow(dispatch),
     resetFlow: resetFlow(dispatch)
   })

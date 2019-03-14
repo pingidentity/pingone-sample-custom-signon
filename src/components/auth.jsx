@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Redirect, Route} from 'react-router';
 import _ from 'lodash';
-import { parseHash, generateRandomValue } from '../sdk/helpers'
+import {generateRandomValue, parseHash} from '../sdk/helpers'
 
 import UserLogin from './userLogin';
 import ForgotPassword from './forgotPassword'
@@ -38,8 +38,18 @@ export const STATUS_TO_COMPATIBLE_PATHS = {
 
 class Auth extends React.Component {
 
-  componentDidUpdate() {
-    this.authenticate();
+  constructor(props) {
+    super(props);
+    this.state = {
+      errorMessage : ''
+    }
+  }
+
+  componentDidUpdate(prevProps) {
+    // Typical usage (don't forget to compare props):
+    if (this.props.authState !== prevProps.authState || this.props.authDetails !== prevProps.authDetails) {
+      this.authenticate();
+    }
   }
 
   componentDidMount() {
@@ -49,48 +59,52 @@ class Auth extends React.Component {
   authenticate(){
     const {authState, authDetails, authActions} = this.props;
 
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
     const flow = authState.flow;
     const error = window.location.href.includes('&error=');
     const signedOff = window.location.hash === '#signedOff';
     const notSigned = !/access_token|id_token|error|done/.test(window.location.hash);
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
     if (!uuidRegex.test(authDetails.environmentId)) {
-      authActions.unrecoverableError(new Error(
-          `Invalid environmentId parameter: it should be a valid UUID.`));
+      this.setState({
+        errorMessage: `Invalid environmentId parameter ${authDetails.environmentId} : it should be a valid UUID.  Please check it in your config.js parameters file.`,
+      });
+      return;
     } else if (!error && !signedOff && flow && !uuidRegex.test(flow.id)) {
-      authActions.unrecoverableError(new Error(
-          `Invalid flowId parameter: ${flow.id}. flowId should be a valid UUID.`));
+      this.setState({
+        errorMessage: `Invalid flowId parameter ${flow.id} : it should be a valid UUID. Please contact PingOne for Customers Developers Support. `,
+      });
+      return;
     } else if (!flow && notSigned) {
       let state = generateRandomValue();
       sessionStorage.setItem("state", state);
 
-      authActions.authorize(authDetails.environmentId,
+      return authActions.authorize(authDetails.environmentId,
           authDetails.responseType, authDetails.clientId,
-          authDetails.redirectUri, authDetails.scope, state);
+          authDetails.redirectUri, authDetails.scope, state)
+      .catch(err => {
+        this.setState({
+          errorMessage: `An unexpected error has occurred. ${err}`,
+        });
+        return Promise.resolve(err);
+      });
     }
   }
 
   render() {
-    const {authState, location, branding} = this.props;
+    const { errorMessage } = this.state;
+    const { authState, location, branding } = this.props;
 
-    if (/error/.test(window.location.hash)) {
+    if (errorMessage) {
+      return <MessageBlock messageType={"error"} message={errorMessage}/>;
+    } else if (/signedOff/.test(window.location.hash)) {
       let errorMsg = parseHash();
       return <MessageBlock messageType={"error"} message={errorMsg.error + ': ' + errorMsg.error_description}/>;
     } else if (/signedOff/.test(window.location.hash)) {
       return <MessageBlock messageType={"success"} message="You successfully signed off and you can now close this browser tab."/>;
-    }
-    else if (!_.isEmpty(window.location.search)){
+    } else if (!_.isEmpty(window.location.search)){
       // Clear current history entry before further operations
       window.history.replaceState({}, '', '/');
-    }
-
-    const message = _.get(authState, 'message', null);
-    const unrecoverableError = _.get(authState, 'unrecoverableError', null);
-
-    if (unrecoverableError || (message && message.isError)) {
-      return <MessageBlock messageType={"error"} message={unrecoverableError ? unrecoverableError : message.content}/>;
     }
 
     const flow = _.get(authState, 'flow', null);
@@ -126,12 +140,11 @@ class Auth extends React.Component {
             <Route path={PATH.SING_ON} exact
                    render={(routeProps) =>
                        <UserLogin {...routeProps}{...this.props}
-                                  flow={flow}
-                                  message={message}/>}/>
+                                  flow={flow}/>}/>
             <Route path={PATH.CHANGE_PASSWORD} exact
                    render={(routeProps) =>
                        <PasswordEditor {...routeProps}{...this.props}
-                                       flow={flow} />}/>
+                                       flow={flow}/>}/>
             <Route
                 path={PATH.FORGOT_PASSWORD_USERNAME}
                 exact
@@ -217,15 +230,13 @@ Auth.propTypes = {
   }).isRequired,
 
   authActions: PropTypes.shape({
-    unrecoverableError: PropTypes.func.isRequired,
     authorize: PropTypes.func.isRequired,
   }).isRequired,
 
   authState: PropTypes.shape({
     flow: PropTypes.shape({
       status: PropTypes.string,
-    }),
-    error: PropTypes.shape({}),
+    })
   }),
 };
 

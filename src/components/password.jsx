@@ -70,7 +70,10 @@ class PasswordEditor extends React.Component {
     }
 
     if (changePasswordUrl === null) {
-      return authActions.unrecoverableError(new Error('An unexpected error has occurred'));
+      this.setState({
+        errorMessage: 'An unexpected error has occurred. There is no password reset link in the flow.',
+      });
+      return;
     }
 
     //  Initiate an action to change (or reset) the user’s password.

@@ -128,7 +128,10 @@ class RecoveryCodeAndPasswordForm extends React.Component {
     }
 
     if (recoverPasswordUrl === null) {
-      return authActions.unrecoverableError(new Error('An unexpected error has occurred'));
+      this.setState({
+        errorMessage: 'An unexpected error has occurred. There is no password recovery link in the flow.',
+      });
+      return;
     }
 
     return new Promise((resolved) => this.setState({ isSubmitting: true }, () => resolved()))

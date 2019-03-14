@@ -41,7 +41,10 @@ class RegistrationForm extends React.Component {
     const registrationLink = _.get(registrationObject, 'href', null);
 
     if (registrationLink === null) {
-      return authActions.unrecoverableError(new Error('An unexpected error has occurred'));
+      this.setState({
+        errorMessage: 'An unexpected error has occurred. There is no user registration link in the flow.',
+      });
+      return;
     }
 
     this.setState({

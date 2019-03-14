@@ -42,7 +42,10 @@ class VerificationCode extends React.Component {
     const verifyLink = _.get(flow.getLinks()['user.verify'], 'href', null);
 
     if (!verifyLink) {
-      return authActions.unrecoverableError(new Error('An unexpected error has occurred'));
+      this.setState({
+        errorMessage: 'An unexpected error has occurred. There is no user verification link in the flow.',
+      });
+      return;
     }
 
     return authActions.verifyUser(verifyLink, verificationCode)
@@ -94,9 +97,9 @@ class VerificationCode extends React.Component {
 
     if (!sendVerificationCodeHref) {
       this.setState({
-        errorMessage: 'An unexpected error has occurred.',
+        errorMessage: 'An unexpected error has occurred. here is no send verification code link in the flow.',
       });
-      return authActions.unrecoverableError(new Error('An unexpected error has occurred'));
+      return;
     }
 
     this.setState({ isResending: true });
