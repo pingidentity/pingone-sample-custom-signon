@@ -6,6 +6,13 @@ const signOn = (apiPath, username, password) => {
   return pingPost(apiPath, 'usernamePassword.check+json', {username, password});
 };
 
+/**
+ * Initiate end user logout.
+ * @param environmentId - a required attribute that specifies environment id
+ * @param logoutRedirectUri - a string that specifies an optional parameter that specifies the URL to which the browser is redirected after a logout has been performed.
+ * @param token  - a required attribute that specifies the ID token passed to the logout endpoint as a hint about the user’s current authenticated session.
+ * @param state - a string that specifies an optional parameter that is used to maintain state between the logout request and the callback to the endpoint specified by the logoutRedirectUri query parameter
+ */
 const signOff = (environmentId, logoutRedirectUri, token, state) => {
   let singOffUrl = `${getBaseApiUrl(
       true)}/${environmentId}/as/signoff?id_token_hint=${token}`;

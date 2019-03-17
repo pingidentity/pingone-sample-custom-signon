@@ -50,9 +50,7 @@ class UserLogin extends React.Component {
       return;
     }
 
-    const validatePasswordObject = _.get(flow.getLinks(), 'usernamePassword.check', null);
-    const validatePasswordUrl = _.get(validatePasswordObject, 'href', null);
-
+    const validatePasswordUrl = _.get(flow.getLinks(), ['usernamePassword.check', 'href'], null);
     if (!validatePasswordUrl) {
       this.setState({
         errorMessage: 'An unexpected error has occurred. There is no user validation link in the flow.',
@@ -98,21 +96,14 @@ class UserLogin extends React.Component {
           errorMessage: 'An unexpected error has occurred.',
         });
       }
-
-      return Promise.resolve(err);
     });
 
   }
 
   handleResetFlow(){
-    const {
-      flow,
-      authActions,
-    } = this.props;
+    const { flow, authActions } = this.props;
 
-    const resetFlowObject = _.get(flow.getLinks(), 'session.reset', null);
-    const resetFlowUrl = _.get(resetFlowObject, 'href', null);
-
+    const resetFlowUrl = _.get(flow.getLinks(), ['session.reset', 'href'], null);
     if (!resetFlowUrl) {
       this.setState({
         errorMessage: 'An unexpected error has occurred. There is no session reset link in the flow.',
@@ -125,25 +116,24 @@ class UserLogin extends React.Component {
       this.setState({
         errorMessage: `An unexpected error has occurred. ${err}`,
       })
-      return Promise.resolve(err);
     });
   }
 
   handleForgotPassword() {
     this.setState({
-      redirect: (<Redirect from={PATH.SING_ON} to={PATH.FORGOT_PASSWORD_USERNAME} />)
+      redirect: (<Redirect from={PATH.SIGN_ON} to={PATH.FORGOT_PASSWORD_USERNAME} />)
     });
   }
 
   handleRegister() {
     this.setState({
-      redirect: (<Redirect from={PATH.SING_ON} to={PATH.REGISTER}/>)
+      redirect: (<Redirect from={PATH.SIGN_ON} to={PATH.REGISTER}/>)
     });
   }
 
   handlePasswordReset() {
     this.setState({
-      redirect: (<Redirect from={PATH.SING_ON} to={PATH.CHANGE_PASSWORD}/>)
+      redirect: (<Redirect from={PATH.SIGN_ON} to={PATH.CHANGE_PASSWORD}/>)
     });
   }
 
@@ -170,8 +160,14 @@ class UserLogin extends React.Component {
         );
       }
 
-      const forgotPasswordLink = _.get(flow.getLinks(), 'password.forgot', null);
-      const forgotPasswordUrl = _.get(forgotPasswordLink, 'href', null);
+      const forgotPasswordUrl = _.get(flow.getLinks(), ['password.forgot', 'href'], null);
+      if (!forgotPasswordUrl) {
+        this.setState({
+          errorMessage: 'An unexpected error has occurred. There is no forgot password link in the flow.',
+        });
+        return;
+      }
+
       const forgotPasswordAnchor = forgotPasswordUrl && (
           <div className="input-field">
               <a

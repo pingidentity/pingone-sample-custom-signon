@@ -37,10 +37,8 @@ class RegistrationForm extends React.Component {
     const { flow, authActions } = this.props;
     const { username, email, password } = this.state;
 
-    const registrationObject = _.get(flow.getLinks(), 'user.register', null);
-    const registrationLink = _.get(registrationObject, 'href', null);
-
-    if (registrationLink === null) {
+    const registrationLink = _.get(flow.getLinks(), ['user.register', 'href'], null);
+    if (!registrationLink) {
       this.setState({
         errorMessage: 'An unexpected error has occurred. There is no user registration link in the flow.',
       });
@@ -104,8 +102,6 @@ class RegistrationForm extends React.Component {
             errorMessage: 'An unexpected error has occurred.',
           });
         }
-
-        return Promise.resolve(err);
       });
   }
 
@@ -140,7 +136,7 @@ class RegistrationForm extends React.Component {
 
   handleSignInClick() {
     this.setState({
-      redirect: (<Redirect from={PATH.REGISTER} to={PATH.SING_ON} />)
+      redirect: (<Redirect from={PATH.REGISTER} to={PATH.SIGN_ON} />)
     });
   }
 

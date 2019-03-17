@@ -55,8 +55,13 @@ class PasswordEditor extends React.Component {
     const { currentPassword, newPasswordVerify, newPassword } = this.state;
     const { flow, authActions } = this.props;
 
-    const changePasswordObject = _.get(flow.getLinks(), 'password.reset', null);
-    const changePasswordUrl = _.get(changePasswordObject, 'href', null);
+    const changePasswordUrl = _.get(flow.getLinks(), ['password.reset', 'href'], null);
+    if (!changePasswordUrl) {
+      this.setState({
+        errorMessage: 'An unexpected error has occurred. There is no password reset link in the flow.',
+      });
+      return;
+    }
 
     this.setState({
       saveAttempted: true,
@@ -67,13 +72,6 @@ class PasswordEditor extends React.Component {
       const errorMessage = 'New passwords don’t match. Please try again.';
       this.setState({ errorMessage });
       return Promise.reject(new Error(errorMessage));
-    }
-
-    if (changePasswordUrl === null) {
-      this.setState({
-        errorMessage: 'An unexpected error has occurred. There is no password reset link in the flow.',
-      });
-      return;
     }
 
     //  Initiate an action to change (or reset) the user’s password.

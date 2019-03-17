@@ -3,11 +3,19 @@ import PropTypes from "prop-types";
 import {Redirect} from "react-router";
 import {PATH} from "./auth";
 import api from '../sdk/api'
-import { parseHash } from '../sdk/helpers'
+import {parseHash} from '../sdk/helpers'
 
+/**
+ * React component the user will be redirected to based on the redirect_uri in config.js - the URL that specifies the return entry point of this application.
+ * This component is expecting "access_token" and "id_token" in a redirect uri
+ */
 class Callback extends React.Component {
   constructor(props) {
     super(props);
+    this.state = {
+      userInfo: null
+    };
+
 
     this.handleSignOff = this.handleSignOff.bind(this);
     this.handleUserInfo = this.handleUserInfo.bind(this);
@@ -15,48 +23,39 @@ class Callback extends React.Component {
 
   handleUserInfo() {
     let accessToken = sessionStorage.getItem("access_token");
-    if(!accessToken){
-      accessToken = api.getAccessToken(this.props.authDetails.environmentId, this.props.authDetails.clientId,
-          this.props.authDetails.clientSecret, this.props.authDetails.redirectUri,
-          this.props.authDetails.responseType, this.props.authDetails.grantType, this.props.authDetails.scope,
+    if (!accessToken) {
+      accessToken = api.getAccessToken(this.props.authDetails.environmentId,
+          this.props.authDetails.clientId,
+          this.props.authDetails.clientSecret,
+          this.props.authDetails.redirectUri,
+          this.props.authDetails.responseType, this.props.authDetails.grantType,
+          this.props.authDetails.scope,
           sessionStorage.getItem("state"), this.props.authDetails.prompt);
     }
     api.getUserInfo(this.props.authDetails.environmentId, accessToken)
-    .then(result =>{
-      let htmlString = '\n<table class="table"><tr>'
-          + '<th>Claim</th><th>Value</th></tr>';
-      for (let claim in result) {
-        htmlString = htmlString + '\n<tr><td>' + claim + '</td><td>' + result[claim]
-            + '</td></tr>';
-      }
-      htmlString = htmlString + '\n</table>';
-      let userData = document.createElement('p');
-      userData.innerHTML = htmlString;
-
-      document.getElementById('user-info').appendChild(
-          document.createElement('div').appendChild(userData)
-      );
+    .then(result => {
+      this.setState({
+        userInfo: result
+      });
     })
   }
 
   handleSignOff() {
     api.signOff(this.props.authDetails.environmentId,
-        this.props.authDetails.logoutRedirectUri, sessionStorage.getItem("id_token"), sessionStorage.getItem("state"));
+        this.props.authDetails.logoutRedirectUri,
+        sessionStorage.getItem("id_token"), sessionStorage.getItem("state"));
 
     sessionStorage.removeItem("access_token");
     sessionStorage.removeItem("id_token");
     sessionStorage.removeItem("expires_in");
     sessionStorage.removeItem("scope");
     sessionStorage.removeItem("state");
-
-    window.history.replaceState({}, '', '/');
-
   }
 
-  componentDidMount(){
+  componentDidMount() {
     let hashes = parseHash();
-    if(hashes && hashes.access_token && hashes.id_token && hashes.expires_in){
-      sessionStorage.setItem("access_token",hashes.access_token);
+    if (hashes && hashes.access_token && hashes.id_token && hashes.expires_in) {
+      sessionStorage.setItem("access_token", hashes.access_token);
       sessionStorage.setItem("id_token", hashes.id_token);
       sessionStorage.setItem("expires_in", hashes.expires_in);
       sessionStorage.setItem("scope", hashes.scope);
@@ -65,12 +64,33 @@ class Callback extends React.Component {
   }
 
   render() {
-
-    if (/signedOff/.test(window.location.hash) ||
-        (!(sessionStorage.getItem("access_token") && sessionStorage.getItem("id_token")) && !/access_token|id_token/.test(window.location.hash))) {
-      window.history.replaceState({}, '', '/');
-      return  (<Redirect to={PATH.SING_ON} />);
+    const {userInfo} = this.state;
+    // Redirect user to login page in case of  access or id tokens absence
+    if (!(sessionStorage.getItem("access_token") && sessionStorage.getItem(
+        "id_token")) && !/access_token|id_token/.test(
+        window.location.hash)) {
+      return (<Redirect to={PATH.SIGN_ON}/>);
     }
+    const userData = userInfo && (
+        <div className="input-field">
+          <table className="table">
+            <thead>
+            <tr>
+              <th>Claim</th>
+              <th>Value</th>
+            </tr>
+            </thead>
+            <tbody>
+            {Object.keys(userInfo).map(key => (
+                <tr key={key}>
+                  <td>{key}</td>
+                  <td>{userInfo[key]}</td>
+                </tr>
+            ))}
+            </tbody>
+          </table>
+        </div>
+    );
 
     return (
         <div className="container">
@@ -92,11 +112,12 @@ class Callback extends React.Component {
 
             <div className="input-field" id="user-info">
               <a href="#"
-                  onClick={this.handleUserInfo}
-                  id="show-user-info">
+                 onClick={this.handleUserInfo}
+                 id="show-user-info">
                 Get user information
               </a>
             </div>
+            {userData}
           </div>
         </div>
 

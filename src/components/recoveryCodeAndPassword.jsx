@@ -60,8 +60,15 @@ class RecoveryCodeAndPasswordForm extends React.Component {
       flow,
       authActions,
     } = this.props;
-    const sendRecoveryCodeObject = _.get(flow.getLinks(), 'password.sendRecoveryCode', null);
-    const sendRecoveryCodeUrl = _.get(sendRecoveryCodeObject, 'href', null);
+
+    const sendRecoveryCodeUrl = _.get(flow.getLinks(), ['password.sendRecoveryCode', 'href'], null);
+    if (!sendRecoveryCodeUrl) {
+      this.setState({
+        errorMessage: 'An unexpected error has occurred. There is no send recovery code link in the flow.',
+      });
+      return;
+    }
+
     this.setState({ isResending: true });
     return authActions.sendRecoveryCode(sendRecoveryCodeUrl)
       .then((newLoginFlow) => {
@@ -89,7 +96,6 @@ class RecoveryCodeAndPasswordForm extends React.Component {
           errorMessage: 'Unable to resend recovery code. Please try again.',
           isResending: false,
         });
-        return Promise.resolve(err);
       });
   }
 
@@ -101,14 +107,13 @@ class RecoveryCodeAndPasswordForm extends React.Component {
     } = this.props;
 
     this.setState({
-      redirect: (<Redirect from={PATH.RECOVERY_CODE_AND_PASSWORD} to={PATH.SING_ON} />),
+      redirect: (<Redirect from={PATH.RECOVERY_CODE_AND_PASSWORD} to={PATH.SIGN_ON} />),
       isSubmitting: false,
       isResending: false
     });
 
     // Reset flow to start the process again
     authActions.updateFlow(null);
-    return Promise.resolve();
   }
 
   handleSubmit(event) {
@@ -119,8 +124,13 @@ class RecoveryCodeAndPasswordForm extends React.Component {
       authActions,
     } = this.props;
 
-    const recoverPasswordObject = _.get(flow.getLinks(), 'password.recover', null);
-    const recoverPasswordUrl = _.get(recoverPasswordObject, 'href', null);
+    const recoverPasswordUrl = _.get(flow.getLinks(), ['password.recover', 'href'], null);
+    if (!recoverPasswordUrl) {
+      this.setState({
+        errorMessage: 'An unexpected error has occurred. There is no password recovery link in the flow.',
+      });
+      return;
+    }
 
     if (newPasswordVerify !== newPassword) {
       this.setState({ errorMessage: 'New passwords don’t match. Please try again.' });
@@ -142,7 +152,6 @@ class RecoveryCodeAndPasswordForm extends React.Component {
       });
 
         authActions.updateFlow(newFlow, false, 'You successfully recovered your password, ' + _.get(newFlow, '_embedded.user.username', ''));
-        return Promise.resolve();
       })
       .catch((err) => {
         const errorDetail = _.get(err, 'details[0].code', null);
@@ -189,8 +198,6 @@ class RecoveryCodeAndPasswordForm extends React.Component {
             isSubmitting: false
           });
         }
-
-        return Promise.resolve(err);
       })
   }
 

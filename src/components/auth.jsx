@@ -13,7 +13,7 @@ import RegistrationForm from './registration'
 import VerificationCode from './verificationCode'
 
 export const PATH = {
-  SING_ON: '/',
+  SIGN_ON: '/',
   EXPIRED: '/expired',
   UNABLE_TO_SIGN_IN: '/unableToSignIn',
   CHANGE_PASSWORD: '/changePassword',
@@ -27,13 +27,13 @@ export const PATH = {
 export const STATUS_TO_COMPATIBLE_PATHS = {
   PASSWORD_EXPIRED: [PATH.EXPIRED],
   MUST_CHANGE_PASSWORD: [PATH.CHANGE_PASSWORD],
-  USERNAME_PASSWORD_REQUIRED: [PATH.SING_ON, PATH.REGISTER, PATH.VERIFY,
+  USERNAME_PASSWORD_REQUIRED: [PATH.SIGN_ON, PATH.REGISTER, PATH.VERIFY,
     PATH.UNABLE_TO_SIGN_IN,
     PATH.FORGOT_PASSWORD_USERNAME],
-  PASSWORD_REQUIRED: [PATH.SING_ON],
+  PASSWORD_REQUIRED: [PATH.SIGN_ON],
   RECOVERY_CODE_REQUIRED: [PATH.RECOVERY_CODE_AND_PASSWORD],
   VERIFICATION_CODE_REQUIRED: [PATH.VERIFY],
-  COMPLETED: [PATH.SING_ON]
+  COMPLETED: [PATH.SIGN_ON]
 };
 
 class Auth extends React.Component {
@@ -41,13 +41,13 @@ class Auth extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      errorMessage : ''
+      errorMessage: ''
     }
   }
 
   componentDidUpdate(prevProps) {
-    // Typical usage (don't forget to compare props):
-    if (this.props.authState !== prevProps.authState || this.props.authDetails !== prevProps.authDetails) {
+    if (!_.isEqual(this.props.authState, prevProps.authState) ||
+        !_.isEqual(this.props.authDetails, prevProps.authDetails)) {
       this.authenticate();
     }
   }
@@ -56,53 +56,59 @@ class Auth extends React.Component {
     this.authenticate();
   }
 
-  authenticate(){
-    const {authState, authDetails, authActions} = this.props;
+  shouldAuthenticate() {
+    const {authState, authDetails} = this.props;
 
     const flow = authState.flow;
-    const error = window.location.href.includes('&error=');
-    const signedOff = window.location.hash === '#signedOff';
-    const notSigned = !/access_token|id_token|error|done/.test(window.location.hash);
+    const notSignedIn = !/access_token|id_token|error|done/.test(
+        window.location.hash);
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+    let shouldAuthenticate = false;
     if (!uuidRegex.test(authDetails.environmentId)) {
       this.setState({
         errorMessage: `Invalid environmentId parameter ${authDetails.environmentId} : it should be a valid UUID.  Please check it in your config.js parameters file.`,
       });
-      return;
-    } else if (!error && !signedOff && flow && !uuidRegex.test(flow.id)) {
+    } else if (flow && !uuidRegex.test(flow.id)) {
       this.setState({
         errorMessage: `Invalid flowId parameter ${flow.id} : it should be a valid UUID. Please contact PingOne for Customers Developers Support. `,
       });
-      return;
-    } else if (!flow && notSigned) {
+    } else if (!flow && notSignedIn) {
+      shouldAuthenticate = true;
+    }
+
+    return shouldAuthenticate;
+  }
+
+  authenticate() {
+    const {authDetails, authActions} = this.props;
+
+    if (this.shouldAuthenticate()) {
       let state = generateRandomValue();
       sessionStorage.setItem("state", state);
 
-      return authActions.authorize(authDetails.environmentId,
+      authActions.authorize(authDetails.environmentId,
           authDetails.responseType, authDetails.clientId,
           authDetails.redirectUri, authDetails.scope, state)
       .catch(err => {
         this.setState({
           errorMessage: `An unexpected error has occurred. ${err}`,
         });
-        return Promise.resolve(err);
       });
     }
   }
 
   render() {
-    const { errorMessage } = this.state;
-    const { authState, location, branding } = this.props;
+    const {errorMessage} = this.state;
+    const {authState, location, branding} = this.props;
 
     if (errorMessage) {
       return <MessageBlock messageType={"error"} message={errorMessage}/>;
-    } else if (/signedOff/.test(window.location.hash)) {
+    } else if (/error/.test(window.location.hash)) {
       let errorMsg = parseHash();
-      return <MessageBlock messageType={"error"} message={errorMsg.error + ': ' + errorMsg.error_description}/>;
-    } else if (/signedOff/.test(window.location.hash)) {
-      return <MessageBlock messageType={"success"} message="You successfully signed off and you can now close this browser tab."/>;
-    } else if (!_.isEmpty(window.location.search)){
+      return <MessageBlock messageType={"error"} message={errorMsg.error + ': '
+      + errorMsg.error_description}/>;
+    } else if (!_.isEmpty(window.location.search)) {
       // Clear current history entry before further operations
       window.history.replaceState({}, '', '/');
     }
@@ -111,16 +117,19 @@ class Auth extends React.Component {
     const isAuthenticated = _.get(authState, 'isAuthenticated', null);
 
     if (flow) {
-      const currentViewPath = STATUS_TO_COMPATIBLE_PATHS[_.get(flow, 'status', 'unknown')];
+      const currentViewPath = STATUS_TO_COMPATIBLE_PATHS[_.get(flow, 'status',
+          'unknown')];
       // Check there other than sign on flows were completed, like reset password or new user creation
-      const notSignOnFlowCompleted = !isAuthenticated && flow.isCompleted() && !_.isEqual(location.pathname, PATH.SING_ON);
-      if ( !currentViewPath || notSignOnFlowCompleted) {
+      const notSignOnFlowCompleted = !isAuthenticated && flow.isCompleted()
+          && !_.isEqual(location.pathname, PATH.SIGN_ON);
+      if (!currentViewPath || notSignOnFlowCompleted) {
         return (<div>
-          <Redirect to={PATH.SING_ON}/>
+          <Redirect to={PATH.SIGN_ON}/>
         </div>);
-      } else if (!(_.some(currentViewPath, (path) => _.startsWith(path, location.pathname))) && !isAuthenticated) {
+      } else if (!(_.some(currentViewPath, (path) => _.startsWith(path, location.pathname)))
+          && !isAuthenticated) {
         return (<div>
-         <Redirect to={currentViewPath[0]}/>
+          <Redirect to={currentViewPath[0]}/>
         </div>)
       }
 
@@ -137,7 +146,7 @@ class Auth extends React.Component {
             <img className="logo" src={branding.logo} alt="logo"/>
           </div>
           <div className="row routes">
-            <Route path={PATH.SING_ON} exact
+            <Route path={PATH.SIGN_ON} exact
                    render={(routeProps) =>
                        <UserLogin {...routeProps}{...this.props}
                                   flow={flow}/>}/>
@@ -197,7 +206,8 @@ class Auth extends React.Component {
                 }
             />
             <Route path={PATH.UNABLE_TO_SIGN_IN} exact
-                   component={MessageBlock}/>
+                   component={MessageBlock}
+            />
           </div>
         </div>
     );

@@ -39,6 +39,15 @@ After all login action steps in the flow are completed successfully, the `GET /{
 The authorization service generates the access token for the application after restarting the authorization flow; it does not require a step to call the `/{environmentId}/as/token` endpoint.
 The `response_type=` **`token`** or **`id_token`** **is required**.
 
+## Application,grant and response type relationships
+The following table shows the relationships between the application type attribute and the default `grantTypes`, `response_type`, and `tokenEndpointAuthMethod` attributes.
+
+|    Application type   |    Grant type   |    Response type   |    Token endpoint authentication method   |
+| --------------------- |   ------------- |------------------- |------------------------------------------ |
+| Non-interactive	| client_credentials	| token	| client_secret_basic| 
+| Native	| authorization_code, implicit	| token, id_token, code	| none| 
+| Web	| authorization_code	| code	| client_secret_basic| 
+| Single-page	| implicit	| token, id_token	| none| 
 
 # Prerequisites 
 You will need the following things:
@@ -50,7 +59,19 @@ You will need the following things:
 
 1. Clone a source code
 `git clone git@github.com:pingidentity/pingone-customers-sample-custom-signon.git . `
-2. Update [config.js](./src/config.js) with your application data extracted from P14C admin console
+2. Update [config.js](./src/config.js) with your application data extracted from P14C admin console:
+    - `environment_id`: *Required*. Your application's Environment ID. You can find this value at your Application's Settings under 
+    **Configuration** tab from the admin console( extract `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` string that specifies the environment 128-bit universally unique identifier ([UUID](https://tools.ietf.org/html/rfc4122)) right from `https://auth.pingone
+    .com/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/as/authorize` 
+    *AUTHORIZATION URL* ). Or from the *Settings* main menu (*ENVIRONMENT ID* variable)
+    - `client_id`: *Required*. Your application's client UUID. You can also find this value at Application's Settings right under the 
+    Application name.
+    - `clientSecret`: A string that specifies the the application’s client secret. This property is required only if the application’s `tokenEndpointAuthMethod` property is set to `CLIENT_SECRET_POST`.
+    - `responseType`: A string that specifies the code or token type returned by an authorization request. Options are `token`, `id_token`, and `code`. This is a required property.
+    - `redirectUri`: *Required*. The URL to which the PingOne will redirect the user's browser after authorization has been granted by the user. *REDIRECT URLS* values corresponds to this data. The Access and ID Token will be available in the hash fragment of this URL. 
+    For simplicity this sample has it hardcoded as `http://localhost:3000/callback`, where `/callback` is handled by [callback react component](src/components/callback.jsx)
+    - `logoutRedirectUri`: The URL to which the browser is redirected after a logout has been performed. *SIGNOFF URLS* values corresponds to this data.
+    - `scope`: A string that specifies permissions that determine the resources that the application can access. This parameter is not required, but it is needed to specify accessible resources.
 3. Build a project by `npm install` or `yarn install`
 4. Start an application by `npm start` or `yarn start`
 
@@ -76,6 +97,8 @@ You will need the following things:
 | [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Verify-user) <br> `Content-Type: application/vnd.pingidentity.user.verify+json`  | Verify the user account to continue the authentication flow |
 | [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Send-verification-email) <br> `Content-Type: application/vnd.pingidentity.user.sendVerificationCode+json`  | Send the user a new account verification email |
 
+
+**Note:** For any application type (except non-interactive), you can specify either `none`, `client_secret_basic`, or `client_secret_post` as the `tokenEndpointAuthMethod` attribute value. Non-interactive applications use the `client_credentials` grant type, which does not support a `tokenEndpointAuthMethod` value of none.
 
 # Developer Notes
 
@@ -124,7 +147,11 @@ In the project directory, you can run:
 ### `npm start` or `yarn start`
 
 Runs the app in the development mode.<br>
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Open [http://localhost:3000](http://localhost:3000) to view it in the browser. If you see CORS related issues like **"Origin is not allowed by Access-Control-Allow-Origin"**, please open another instance of your browser with disabled security.
+If you are using Chrome on Mac OS, then start it as:
+```bash
+open -n -a "Google Chrome" --args --user-data-dir=/tmp/temp_chrome_user_data_dir http://localhost:3000/ --disable-web-security
+```
 
 The page will reload if you make edits.<br>
 You will also see any lint errors in the console.

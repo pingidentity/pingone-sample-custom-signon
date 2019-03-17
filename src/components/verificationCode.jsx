@@ -40,7 +40,6 @@ class VerificationCode extends React.Component {
     });
 
     const verifyLink = _.get(flow.getLinks()['user.verify'], 'href', null);
-
     if (!verifyLink) {
       this.setState({
         errorMessage: 'An unexpected error has occurred. There is no user verification link in the flow.',
@@ -55,7 +54,6 @@ class VerificationCode extends React.Component {
         });
 
         authActions.updateFlow(newloginFlow);
-        return Promise.resolve();
       })
       .catch((err) => {
         this.setState({ isVerifying: false });
@@ -77,8 +75,6 @@ class VerificationCode extends React.Component {
           errorMessage: 'An unexpected error occurred. Please try again.',
           verificationCode: '',
         });
-
-        return Promise.reject(err);
       });
   }
 
@@ -88,16 +84,15 @@ class VerificationCode extends React.Component {
       redirect: (<Redirect to={PATH.FORGOT_PASSWORD_USERNAME} />),
       isVerifying: false,
     });
-    return Promise.resolve();
   }
 
   handleResendEmail() {
     const { flow, authActions } = this.props;
-    const sendVerificationCodeHref = _.get(flow.getLinks()['user.sendVerificationCode'], 'href', null);
 
+    const sendVerificationCodeHref = _.get(flow.getLinks()['user.sendVerificationCode'], 'href', null);
     if (!sendVerificationCodeHref) {
       this.setState({
-        errorMessage: 'An unexpected error has occurred. here is no send verification code link in the flow.',
+        errorMessage: 'An unexpected error has occurred. There is no send verification code link in the flow.',
       });
       return;
     }
@@ -114,7 +109,6 @@ class VerificationCode extends React.Component {
           errorMessage: 'Something went wrong when trying to resend a verification code.',
           isResending: false,
         });
-        return Promise.reject(err);
       });
   }
 

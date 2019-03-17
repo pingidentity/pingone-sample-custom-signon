@@ -3,10 +3,10 @@ const common = {
     logo: require('./logo-pingidentity.png')
   },
   authDetails: {
-    environmentId: <environmentId>,
-    responseType: <responseType>,
-    clientId: <clientId>,
-    clientSecret: <clientSecret>,
+    environmentId: "<environmentId>",
+    responseType: "<responseType>",
+    clientId: "<clientId>",
+    clientSecret: "<clientSecret>",
     redirectUri: "http://localhost:3000/callback",
     logoutRedirectUri: "http://localhost:3000",
     scope: "profile address email phone"

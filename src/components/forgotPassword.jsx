@@ -29,9 +29,13 @@ class ForgotPassword extends React.Component {
       spinnerMessage: 'Processing password recovery request...'
     });
 
-    const forgotPasswordObject = _.get(flow.getLinks(), 'password.forgot',
-        null);
-    const forgotPasswordUrl = _.get(forgotPasswordObject, 'href', null);
+    const forgotPasswordUrl = _.get(flow.getLinks(), ['password.forgot', 'href'], null);
+    if (!forgotPasswordUrl) {
+      this.setState({
+        errorMessage: 'There is no forgot password link in the flow. Your password policy may have disabled password recovery. Please check your application configuration in PingOne for Customers Admin Console. ',
+      });
+      return;
+    }
 
     return authActions.forgotPassword(forgotPasswordUrl, username)
     .catch(error => {
@@ -40,24 +44,20 @@ class ForgotPassword extends React.Component {
           isSubmitting: false,
           errorMessage: 'Such user name could not be found. Please try again.'
         });
-
       } else {
         this.setState({
           errorMessage: 'An unexpected error has occurred while processing password recovery request.',
         });
       }
-      return Promise.reject(error);
-
     });
   }
 
   handleCancel() {
     this.setState({
       redirect: (
-          <Redirect from={PATH.FORGOT_PASSWORD_USERNAME} to={PATH.SING_ON}/>),
+          <Redirect from={PATH.FORGOT_PASSWORD_USERNAME} to={PATH.SIGN_ON}/>),
       isSubmitting: false
     });
-    return Promise.resolve();
   }
 
   render() {
@@ -70,8 +70,10 @@ class ForgotPassword extends React.Component {
     } = this.state;
     const {message} = this.props;
 
-    const alert = (errorMessage || message ) && (
-        (errorMessage || (message && message.isError)) ? (<div className="alert alert-danger">{errorMessage ? errorMessage : message.content}</div>) :
+    const alert = (errorMessage || message) && (
+        (errorMessage || (message && message.isError)) ? (
+                <div className="alert alert-danger">{errorMessage ? errorMessage
+                    : message.content}</div>) :
             <div className="alert alert-info">{message.content}</div>
     );
 
