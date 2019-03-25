@@ -1,7 +1,3 @@
-/**
- * Contains functions that correspond to steps needed to make it through a flow
- * Each function corresponds with an action the auth UI needs to take and should call function(s) from actions.js
- */
 import _ from 'lodash';
 
 import { RequiredProperties } from './helpers';
@@ -36,88 +32,20 @@ export class Flow {
     this.resumeUrl = resumeUrl;
   }
 
-  getId(){
-    return this.id;
-  }
-
-  getEmbedded(){
-    return this._embedded;
-  }
-
-  getResumeUrl(){
-    return this.resumeUrl;
-  }
-
-  getLinks(){
-    return this._links;
-  }
-
-  isExpired() {
+  isPasswordExpired() {
     return _.isEqual(this.status, STATUS.PASSWORD_EXPIRED);
-  }
-
-  isSuccess() {
-    return _.isEqual(this.status, STATUS.SUCCESS);
-  }
-
-  isFailed() {
-    return _.isEqual(this.status, STATUS.FAILED);
-  }
-
-  isUnauthorized() {
-    return _.isEqual(this.status, STATUS.UNAUTHORIZED);
-  }
-
-  isLockedOut() {
-    return _.isEqual(this.status, STATUS.PASSWORD_LOCKED_OUT);
-  }
-
-  isNoPassword() {
-    return _.isEqual(this.status, STATUS.NO_PASSWORD);
-  }
-
-  isUnknown() {
-    return _.isEqual(this.status, STATUS.UNKNOWN);
   }
 
   isCompleted() {
     return _.isEqual(this.status, STATUS.COMPLETED);
   }
 
-  isMustChangePassword() {
-    return _.isEqual(this.status, STATUS.MUST_CHANGE_PASSWORD);
-  }
-
-  isPasswordRequirementsNotMet() {
-    return _.isEqual(this.status, STATUS.PASSWORD_REQUIREMENTS_NOT_MET);
-  }
-
-  isUsernamePasswordRequired() {
-    return _.isEqual(this.status, STATUS.USERNAME_PASSWORD_REQUIRED);
-  }
-
-  isPasswordRequired() {
-    return _.isEqual(this.status, STATUS.PASSWORD_REQUIRED);
-  }
-
   isRecoveryCodeRequired() {
     return _.isEqual(this.status, STATUS.RECOVERY_CODE_REQUIRED);
   }
 
-  isVerificationCodeRequired() {
-    return _.isEqual(this.status, STATUS.VERIFICATION_CODE_REQUIRED);
-  }
-
   getLinks() {
     return this.links;
-  }
-
-  setLinks(links) {
-    this.links = links;
-  }
-
-  getEmbedded() {
-    return this.embedded;
   }
 
   getPasswordPolicy() {

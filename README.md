@@ -1,19 +1,20 @@
 # Introduction
 
-This sample demonstrates how to initiate login actions that specify the operations required to authenticate with a username and password. It uses PingOne flow orchestration service to authenticate the application or user that initiated the authentication request. 
+This sample demonstrates how to initiate login actions that specify the operations required to authorize with a username and password. It uses PingOne flow orchestration service to authorize the application or user that initiated the authentication request. 
 This service is responsible for initiating the authentication session and making calls to specific actions required by the authentication workflow.
 
 Flow endpoint operations are used only to implement custom authentication UIs. 
 OIDC/OAuth 2 requests initiate the flow and redirect the browser to the custom authentication UI (which is configured in the application through the application’s `loginPageUrl` property.)
 
 ## Choose Application Type
-PingOne supports several application types, but for this one better to implement Single page (runs on the client side after it loads, so it can't keep a client secret) or Native ( typically intended for mobile devices) application type with : auth code,  implicit or refresh token grant types.
+PingOne supports several application types, but for this one better to implement **Single page** (runs on the client side after it loads, so it can't keep a client secret) or **Native** ( typically intended for mobile devices) application type with : auth code,  implicit or refresh token grant types.
 
 The application type determines the authorization flow steps needed to acquire an access token from the authorization service. 
-The following example describe `authorization_code` or `implicit` [authorization flows](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_AuthActivities/p1-a_appAuth/) for the designated application type.
+
+The following example describe `authorization_code` or `implicit` (is set by default) [authorization flows](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_AuthActivities/p1-a_appAuth/) for the designated application type.
 
 
-__authorization code grant type__
+__Authorization code grant type__
 
 This flow uses the `GET /{environmentId}/flows/{flowId}` endpoint to retrieve the login action steps, and the POST `/{environmentId}/flows/{flowId}/password` endpoint
  to validate the username and password required by the login action. After all login action steps in the flow are completed, the `GET /{environmentId}/as/resume` endpoint continues processing the authorization request.
@@ -29,7 +30,7 @@ After restarting the authorization flow, you can submit the authorization code t
 The **`grant_type`** and **`code`** parameter values **are required in the request body**. The `redirect_uri` is a required parameter only if it was included in the original `GET /{environmentId}/as/authorize` request.
 
 
-__implicit grant type.__
+__Implicit grant type__
 
 Application is issued an access token without requiring an authorization code exchange. When the request is made to the `/{environmentId}/as/authorize` endpoint for an implicit grant, the value of the `response_type` parameter is set to `token` or `id_token`.
 After all login action steps in the flow are completed successfully, the `GET /{environmentId}/as/resume` endpoint continues processing the authorization request.

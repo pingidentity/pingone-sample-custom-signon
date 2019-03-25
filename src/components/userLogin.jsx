@@ -149,7 +149,7 @@ class UserLogin extends React.Component {
     if(flow) {
 
       // Rendering a Redirect will cause switch to the corresponding Route's content
-      if (flow.isExpired()) {
+      if (flow.isPasswordExpired()) {
         return (
             <Redirect
                 to={{
@@ -161,13 +161,6 @@ class UserLogin extends React.Component {
       }
 
       const forgotPasswordUrl = _.get(flow.getLinks(), ['password.forgot', 'href'], null);
-      if (!forgotPasswordUrl) {
-        this.setState({
-          errorMessage: 'An unexpected error has occurred. There is no forgot password link in the flow.',
-        });
-        return;
-      }
-
       const forgotPasswordAnchor = forgotPasswordUrl && (
           <div className="input-field">
               <a
@@ -191,6 +184,13 @@ class UserLogin extends React.Component {
       const passwordResetAnchor = passwordResetLink && (
             <div className="input-field">
               <a data-id="reset-password-button" href="#" onClick={this.handlePasswordReset}>Reset password</a>
+            </div>
+      );
+
+      const resetFlowLink=_.get(flow.getLinks(), ['session.reset'], null);
+      const resetFlowAnchor = resetFlowLink && (
+            <div className="input-field">
+              <a data-id="session-reset-button" href="#" onClick={this.handleResetFlow}>Switch Accounts</a>
             </div>
       );
 
@@ -252,14 +252,7 @@ class UserLogin extends React.Component {
               {forgotPasswordAnchor}
               {registerUserAnchor}
               {passwordResetAnchor}
-              <div className="input-field">
-                <a
-                    href="#"
-                    onClick={this.handleResetFlow}
-                >
-                  Switch Accounts
-                </a>
-              </div>
+              {resetFlowAnchor}
             </div>
           </div>
 

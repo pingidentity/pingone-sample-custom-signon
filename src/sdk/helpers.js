@@ -236,5 +236,5 @@ export const generateRandomValue = () => {
   let D = new Uint32Array(2);
   crypto.getRandomValues(D);
   return D[0].toString(36);
-}
+};
 

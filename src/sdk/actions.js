@@ -1,5 +1,6 @@
 import {Flow} from '../sdk/index';
 import api from './api';
+import _ from "lodash";
 
 const types = {
   UPDATE_FLOW: 'UPDATE_FLOW',
@@ -19,7 +20,7 @@ const updateFlowAction = (result, isAuthenticated = false, message = null) => ({
 
 const updateFlow = (dispatch) => (result = null, isAuthenticated = false, message = null) => {
   return dispatch(updateFlowAction(result ? new Flow(result): result, isAuthenticated, message));
-}
+};
 
 const resetFlow = (dispatch) => (apiPath) => {
   return api.resetFlow(apiPath)
@@ -27,18 +28,16 @@ const resetFlow = (dispatch) => (apiPath) => {
     dispatch(updateFlowAction(new Flow(flow)));
     return Promise.resolve(flow);
   })
-}
+};
 
 const authorize = (dispatch) => (environmentId, responseType, clientId,
-    redirectUri, scope, state) => {
-
-  return api.authorize(environmentId, responseType, clientId, redirectUri,
-      scope, state)
+    redirectUri, scope) => {
+  return api.authorize(environmentId, responseType, clientId, redirectUri, scope)
   .then(flow => {
     dispatch(updateFlowAction(new Flow(flow)));
     return Promise.resolve(flow);
   })
-}
+};
 
 const signOn = (dispatch) => (apiPath, username, password) => {
   return api.signOn(apiPath, username, password)
@@ -54,7 +53,7 @@ const forgotPassword = (dispatch) => (apiPath, username) => {
     dispatch(updateFlowAction(new Flow(flow)));
     return Promise.resolve(flow);
   })
-}
+};
 
 const sendRecoveryCode = (dispatch) => (apiPath) => {
   return api.sendRecoveryCode(apiPath)
@@ -62,18 +61,18 @@ const sendRecoveryCode = (dispatch) => (apiPath) => {
     dispatch(updateFlowAction(new Flow(flow)));
     return Promise.resolve(flow);
   })
-}
+};
 
 const recoverUserPassword = (dispatch) => (apiPath, recoveryCode,
     newPassword) => {
   return api.recoverUserPassword(apiPath, recoveryCode,
       newPassword)
-  .then((flow) => {
-    dispatch(updateFlowAction(new Flow(flow)));
+  .then(flow => {
+    dispatch(updateFlowAction(new Flow(flow), false, 'You successfully recovered your password, ' + _.get(flow, '_embedded.user.username', '')));
     return Promise.resolve(flow);
   })
 
-}
+};
 
 const changeUserPassword = (dispatch) => (apiPath, username, currentPassword,
     newPassword) => {
@@ -92,15 +91,15 @@ const sendVerificationCode = (dispatch) => (apiPath) => {
     dispatch(updateFlowAction(new Flow(flow)));
     return Promise.resolve(flow);
   })
-}
+};
 
 const verifyUser = (dispatch) => (apiPath, verificationCode) => {
   return api.verifyUser(apiPath, verificationCode)
-  .then((flow) => {
-    dispatch(updateFlowAction(new Flow(flow)));
+  .then(flow => {
+    dispatch(updateFlowAction(new Flow(flow), false, 'You successfully registered, '+ _.get(flow, '_embedded.user.username', '')));
     return Promise.resolve(flow);
   })
-}
+};
 
 const registerUser = (dispatch) => (apiPath, username, email, password) => {
   return api.registerUser(apiPath, username, email, password)
@@ -108,7 +107,7 @@ const registerUser = (dispatch) => (apiPath, username, email, password) => {
     dispatch(updateFlowAction(new Flow(flow)));
     return Promise.resolve(flow);
   })
-}
+};
 
 export default {
   types,

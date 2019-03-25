@@ -54,9 +54,6 @@ class RegistrationForm extends React.Component {
         this.setState({
           isRegistering: false,
         });
-
-        authActions.updateFlow(newFlow, false, 'You successfully registered, '+ _.get(newFlow, '_embedded.user.username', ''));
-        return Promise.resolve(newFlow);
       })
       .catch((err) => {
         this.setState({

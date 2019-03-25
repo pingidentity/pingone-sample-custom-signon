@@ -38,11 +38,11 @@ class RecoveryCodeAndPasswordForm extends React.Component {
   }
 
   handleRecoveryCodeUpdate(event) {
-    this.setState({ recoveryCode: event.target.value });
+    this.setState({recoveryCode: event.target.value});
   }
 
   handleNewPasswordUpdate(event) {
-    const { flow } = this.props;
+    const {flow} = this.props;
     const errors = validator(flow.getPasswordPolicy(), event.target.value);
     this.setState({
       newPassword: event.target.value,
@@ -52,7 +52,7 @@ class RecoveryCodeAndPasswordForm extends React.Component {
   }
 
   handleNewPasswordVerifyUpdate(event) {
-    this.setState({ newPasswordVerify: event.target.value });
+    this.setState({newPasswordVerify: event.target.value});
   }
 
   handleResend() {
@@ -69,7 +69,7 @@ class RecoveryCodeAndPasswordForm extends React.Component {
       return;
     }
 
-    this.setState({ isResending: true });
+    this.setState({isResending: true});
     return authActions.sendRecoveryCode(sendRecoveryCodeUrl)
       .then((newLoginFlow) => {
         const updatedFlow = new Flow(newLoginFlow);
@@ -118,7 +118,7 @@ class RecoveryCodeAndPasswordForm extends React.Component {
 
   handleSubmit(event) {
     event.preventDefault();
-    const { recoveryCode, newPasswordVerify, newPassword } = this.state;
+    const {recoveryCode, newPasswordVerify, newPassword} = this.state;
     const {
       flow,
       authActions,
@@ -144,17 +144,15 @@ class RecoveryCodeAndPasswordForm extends React.Component {
       return;
     }
 
-    return new Promise((resolved) => this.setState({ isSubmitting: true }, () => resolved()))
-      .then(() => authActions.recoverUserPassword(recoverPasswordUrl, recoveryCode, newPassword))
-      .then(newFlow => {
-        this.setState({
-          isSubmitting: false
+    return new Promise(resolved => this.setState({isSubmitting: true}, () => resolved()))
+    .then(() => authActions.recoverUserPassword(recoverPasswordUrl, recoveryCode, newPassword))
+    .then(newFlow => {
+      this.setState({
+        isSubmitting: false
       });
-
-        authActions.updateFlow(newFlow, false, 'You successfully recovered your password, ' + _.get(newFlow, '_embedded.user.username', ''));
-      })
-      .catch((err) => {
-        const errorDetail = _.get(err, 'details[0].code', null);
+    })
+    .catch((err) => {
+      const errorDetail = _.get(err, 'details[0].code', null);
 
         if (_.isEqual(errorDetail, 'INVALID_VALUE')) {
           const errorTarget = _.get(err, 'details[0].target', null);
@@ -228,7 +226,7 @@ class RecoveryCodeAndPasswordForm extends React.Component {
       isSubmitting,
     } = this.state;
 
-    const { flow, message } = this.props;
+    const {flow, message} = this.props;
 
     const requirementsTooltip = generateRequirementsTooltip(clientValidatedRequirements, flow);
 
@@ -241,7 +239,7 @@ class RecoveryCodeAndPasswordForm extends React.Component {
     const spinnerMessage = () => {
       if (isSubmitting) {
         return 'Processing recovery request...'
-      }  else if (isResending){
+      } else if (isResending) {
         return 'Processing resending recovery request...'
       }
     };

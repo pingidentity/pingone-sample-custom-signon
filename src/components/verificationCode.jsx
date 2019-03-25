@@ -48,12 +48,10 @@ class VerificationCode extends React.Component {
     }
 
     return authActions.verifyUser(verifyLink, verificationCode)
-      .then((newloginFlow) => {
+      .then(newFlow => {
         this.setState({
           isVerifying: false,
         });
-
-        authActions.updateFlow(newloginFlow);
       })
       .catch((err) => {
         this.setState({ isVerifying: false });

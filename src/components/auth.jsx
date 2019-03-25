@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Redirect, Route} from 'react-router';
 import _ from 'lodash';
-import {generateRandomValue, parseHash} from '../sdk/helpers'
+import {parseHash} from '../sdk/helpers'
 
 import UserLogin from './userLogin';
 import ForgotPassword from './forgotPassword'
@@ -28,8 +28,7 @@ export const STATUS_TO_COMPATIBLE_PATHS = {
   PASSWORD_EXPIRED: [PATH.EXPIRED],
   MUST_CHANGE_PASSWORD: [PATH.CHANGE_PASSWORD],
   USERNAME_PASSWORD_REQUIRED: [PATH.SIGN_ON, PATH.REGISTER, PATH.VERIFY,
-    PATH.UNABLE_TO_SIGN_IN,
-    PATH.FORGOT_PASSWORD_USERNAME],
+    PATH.UNABLE_TO_SIGN_IN, PATH.FORGOT_PASSWORD_USERNAME],
   PASSWORD_REQUIRED: [PATH.SIGN_ON],
   RECOVERY_CODE_REQUIRED: [PATH.RECOVERY_CODE_AND_PASSWORD],
   VERIFICATION_CODE_REQUIRED: [PATH.VERIFY],
@@ -48,15 +47,15 @@ class Auth extends React.Component {
   componentDidUpdate(prevProps) {
     if (!_.isEqual(this.props.authState, prevProps.authState) ||
         !_.isEqual(this.props.authDetails, prevProps.authDetails)) {
-      this.authenticate();
+      this.authorize();
     }
   }
 
   componentDidMount() {
-    this.authenticate();
+    this.authorize();
   }
 
-  shouldAuthenticate() {
+  shouldAuthorize() {
     const {authState, authDetails} = this.props;
 
     const flow = authState.flow;
@@ -64,7 +63,7 @@ class Auth extends React.Component {
         window.location.hash);
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-    let shouldAuthenticate = false;
+    let shouldAuthorize = false;
     if (!uuidRegex.test(authDetails.environmentId)) {
       this.setState({
         errorMessage: `Invalid environmentId parameter ${authDetails.environmentId} : it should be a valid UUID.  Please check it in your config.js parameters file.`,
@@ -74,22 +73,19 @@ class Auth extends React.Component {
         errorMessage: `Invalid flowId parameter ${flow.id} : it should be a valid UUID. Please contact PingOne for Customers Developers Support. `,
       });
     } else if (!flow && notSignedIn) {
-      shouldAuthenticate = true;
+      shouldAuthorize = true;
     }
 
-    return shouldAuthenticate;
+    return shouldAuthorize;
   }
 
-  authenticate() {
+  authorize() {
     const {authDetails, authActions} = this.props;
 
-    if (this.shouldAuthenticate()) {
-      let state = generateRandomValue();
-      sessionStorage.setItem("state", state);
-
+    if (this.shouldAuthorize()) {
       authActions.authorize(authDetails.environmentId,
           authDetails.responseType, authDetails.clientId,
-          authDetails.redirectUri, authDetails.scope, state)
+          authDetails.redirectUri, authDetails.scope)
       .catch(err => {
         this.setState({
           errorMessage: `An unexpected error has occurred. ${err}`,
@@ -115,18 +111,21 @@ class Auth extends React.Component {
 
     const flow = _.get(authState, 'flow', null);
     const isAuthenticated = _.get(authState, 'isAuthenticated', null);
+    const message = _.get(authState, 'message', null);
 
     if (flow) {
       const currentViewPath = STATUS_TO_COMPATIBLE_PATHS[_.get(flow, 'status',
           'unknown')];
-      // Check there other than sign on flows were completed, like reset password or new user creation
-      const notSignOnFlowCompleted = !isAuthenticated && flow.isCompleted()
-          && !_.isEqual(location.pathname, PATH.SIGN_ON);
-      if (!currentViewPath || notSignOnFlowCompleted) {
+      // Check the use case when user is not signed in, but the flow like reset password or new user creation is completed,
+      // to set an application on the sign in page again
+      const managementFlowCompleted = !isAuthenticated && flow.isCompleted();
+      if (!currentViewPath ||
+          (!_.isEqual(location.pathname, PATH.SIGN_ON) && managementFlowCompleted)) {
         return (<div>
           <Redirect to={PATH.SIGN_ON}/>
         </div>);
-      } else if (!(_.some(currentViewPath, (path) => _.startsWith(path, location.pathname)))
+      } else if (!(_.some(currentViewPath,
+          (path) => _.startsWith(path, location.pathname)))
           && !isAuthenticated) {
         return (<div>
           <Redirect to={currentViewPath[0]}/>
@@ -149,18 +148,18 @@ class Auth extends React.Component {
             <Route path={PATH.SIGN_ON} exact
                    render={(routeProps) =>
                        <UserLogin {...routeProps}{...this.props}
-                                  flow={flow}/>}/>
+                                  flow={flow} message={message}/>}/>
             <Route path={PATH.CHANGE_PASSWORD} exact
                    render={(routeProps) =>
                        <PasswordEditor {...routeProps}{...this.props}
-                                       flow={flow}/>}/>
+                                       flow={flow} message={message}/>}/>
             <Route
                 path={PATH.FORGOT_PASSWORD_USERNAME}
                 exact
                 render={(routeProps) =>
                     (<ForgotPassword
                         {...routeProps}{...this.props}
-                        flow={flow}
+                        flow={flow} message={message}
                     />)
                 }
             />
@@ -170,7 +169,7 @@ class Auth extends React.Component {
                 render={(routeProps) =>
                     (<PasswordEditor
                         {...routeProps}{...this.props}
-                        flow={flow}
+                        flow={flow} message={message}
                         feedbackMessage="Your password has expired. Please create a new one."
                     />)
                 }
@@ -181,7 +180,7 @@ class Auth extends React.Component {
                 render={(routeProps) =>
                     (<RegistrationForm
                         {...routeProps}{...this.props}
-                        flow={flow}
+                        flow={flow} message={message}
                     />)
                 }
             />
@@ -191,7 +190,7 @@ class Auth extends React.Component {
                 render={(routeProps) =>
                     (<VerificationCode
                         {...routeProps}{...this.props}
-                        flow={flow}
+                        flow={flow} message={message}
                     />)
                 }
             />
@@ -201,7 +200,7 @@ class Auth extends React.Component {
                 render={(routeProps) =>
                     (<RecoveryCodeAndPasswordForm
                         {...routeProps}{...this.props}
-                        flow={flow}
+                        flow={flow} message={message}
                     />)
                 }
             />
