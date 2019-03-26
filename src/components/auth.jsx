@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Redirect, Route} from 'react-router';
 import _ from 'lodash';
-import {parseHash} from '../sdk/helpers'
+import {generateRandomValue, parseHash} from '../sdk/helpers'
 
 import UserLogin from './userLogin';
 import ForgotPassword from './forgotPassword'
@@ -20,7 +20,8 @@ export const PATH = {
   REGISTER: '/register',
   VERIFY: '/verify',
   FORGOT_PASSWORD_USERNAME: '/forgotPasswordUsername',
-  RECOVERY_CODE_AND_PASSWORD: '/recoveryCode'
+  RECOVERY_CODE_AND_PASSWORD: '/recoveryCode',
+  CALLBACK: '/callback'
 };
 
 // Maps each initial status to list of compatible paths; 1st path in list is default
@@ -83,9 +84,15 @@ class Auth extends React.Component {
     const {authDetails, authActions} = this.props;
 
     if (this.shouldAuthorize()) {
+      let state = generateRandomValue();
+      let nonce = generateRandomValue();
+      sessionStorage.setItem("state", state);
+
       authActions.authorize(authDetails.environmentId,
           authDetails.responseType, authDetails.clientId,
-          authDetails.redirectUri, authDetails.scope)
+          authDetails.redirectUri, authDetails.scope,
+          state, nonce,
+          authDetails.prompt, authDetails.maxAge)
       .catch(err => {
         this.setState({
           errorMessage: `An unexpected error has occurred. ${err}`,
@@ -235,7 +242,8 @@ Auth.propTypes = {
     prompt: PropTypes.string,
     responseType: PropTypes.string.isRequired,
     redirectUri: PropTypes.string.isRequired,
-    logoutRedirectUri: PropTypes.string
+    logoutRedirectUri: PropTypes.string,
+    maxAge: PropTypes.number
   }).isRequired,
 
   authActions: PropTypes.shape({

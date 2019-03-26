@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import {Redirect} from "react-router";
 import {PATH} from "./auth";
 import api from '../sdk/api'
-import {generateRandomValue, parseHash} from '../sdk/helpers'
+import {parseHash} from '../sdk/helpers'
 import _ from "lodash";
 import {STATUS} from "../sdk";
 
@@ -16,6 +16,7 @@ class Callback extends React.Component {
     super(props);
     this.state = {
       userInfo: null,
+      redirect: null,
       errorMessage: ''
     };
 
@@ -23,22 +24,34 @@ class Callback extends React.Component {
     this.handleUserInfo = this.handleUserInfo.bind(this);
   }
 
-  handleUserInfo() {
+  getAccessToken() {
     let accessToken = sessionStorage.getItem("access_token");
     if (!accessToken) {
-      accessToken = api.getAccessToken(
+      return api.getAccessToken(
           this.props.authDetails.environmentId,
           this.props.authDetails.clientId,
           this.props.authDetails.clientSecret,
           this.props.authDetails.redirectUri,
-          this.props.authDetails.responseType,
           this.props.authDetails.grantType,
-          this.props.authDetails.scope,
-          sessionStorage.getItem("state"),
-          this.props.authDetails.prompt,
-          this.props.authDetails.maxAge);
+          this.props.authDetails.tokenEndpointAuthMethod,
+          sessionStorage.getItem("code"))
+      .then(token => {
+        sessionStorage.setItem("access_token", token.access_token);
+        sessionStorage.setItem("id_token", token.id_token);
+        sessionStorage.setItem("expires_in", token.expires_in);
+        sessionStorage.setItem("scope", token.scope);
+        return Promise.resolve(token.access_token);
+      })
+    } else {
+      return Promise.resolve(accessToken);
     }
-    api.getUserInfo(this.props.authDetails.environmentId, accessToken)
+  }
+
+  handleUserInfo() {
+    this.getAccessToken()
+    .then(accessToken => {
+      return api.getUserInfo(this.props.authDetails.environmentId, accessToken)
+    })
     .then(result => {
       this.setState({
         userInfo: result
@@ -47,7 +60,8 @@ class Callback extends React.Component {
     .catch(error => {
       const errorDetail = _.get(error, 'details[0].code', null);
       if (_.isEqual(errorDetail, STATUS.INVALID_VALUE)) {
-        if (_.get(error, 'details[0].message', null).includes("Access token expired")){
+        if (_.get(error, 'details[0].message', null).includes(
+            "Access token expired")) {
           this.setState({
             errorMessage: 'Your access token is expired. Please login again.'
           });
@@ -56,21 +70,36 @@ class Callback extends React.Component {
             errorMessage: _.get(error, 'details[0].message', null)
           });
         }
-      } else {
+      } else if (errorDetail) {
         this.setState({
           errorMessage: errorDetail + _.get(error, 'details[0].message', null)
         });
+      } else if (_.get(error, 'error', null) || _.get(error,
+          'error_description', null)) {
+        this.setState({
+          errorMessage: _.get(error, 'error', null) + ': ' + _.get(error,
+              'error_description', null)
+        });
       }
-    });
+      return Promise.reject(error);
+    })
   }
 
   handleSignOff() {
-    api.signOff(this.props.authDetails.environmentId,
-        this.props.authDetails.logoutRedirectUri,
-        sessionStorage.getItem("id_token"), sessionStorage.getItem("state"));
+    if (sessionStorage.getItem("id_token")) {
+      api.signOff(this.props.authDetails.environmentId,
+          this.props.authDetails.logoutRedirectUri,
+          sessionStorage.getItem("id_token"), sessionStorage.getItem("state"));
+    } else {
+      this.setState({
+        redirect: (
+            <Redirect from={PATH.CALLBACK} to={PATH.SIGN_ON}/>)
+      });
+    }
 
     sessionStorage.removeItem("access_token");
     sessionStorage.removeItem("id_token");
+    sessionStorage.removeItem("code");
     sessionStorage.removeItem("expires_in");
     sessionStorage.removeItem("scope");
     sessionStorage.removeItem("state");
@@ -78,29 +107,39 @@ class Callback extends React.Component {
 
   componentDidMount() {
     let hashes = parseHash();
+    let stateMatch = window.location.href.match('[?#&]state=([^&]*)');
+    if (!stateMatch && !stateMatch[1] &&
+        !_.isEqual(stateMatch[1], sessionStorage.getItem("state"))) {
+      this.setState({
+        errorMessage: "State parameter mismatch"
+      });
+      return;
+    }
+
+    let codeMatch = window.location.href.match('[?#&]code=([^&]*)');
     if (hashes && hashes.access_token && hashes.id_token && hashes.expires_in) {
       sessionStorage.setItem("access_token", hashes.access_token);
       sessionStorage.setItem("id_token", hashes.id_token);
       sessionStorage.setItem("expires_in", hashes.expires_in);
       sessionStorage.setItem("scope", hashes.scope);
-
-      let state = generateRandomValue();
-      sessionStorage.setItem("state", state);
-
-      window.history.replaceState({}, '', '#done');
+    } else if (codeMatch && codeMatch[1]) {
+      sessionStorage.setItem("code", codeMatch[1]);
     }
   }
 
   render() {
-    const {userInfo, errorMessage} = this.state;
+    const {userInfo, redirect, errorMessage} = this.state;
     // Redirect user to login page in case of  access or id tokens absence
     if (!(sessionStorage.getItem("access_token") && sessionStorage.getItem(
-        "id_token")) && !/access_token|id_token/.test(
-        window.location.hash)) {
+        "id_token") && !/access_token|id_token/.test(
+        window.location.hash)) && !sessionStorage.getItem("code")
+        && !/code/.test(
+            window.location.href)) {
       return (<Redirect to={PATH.SIGN_ON}/>);
     }
 
-    const alert = errorMessage && (<div className="alert alert-danger">{errorMessage}</div>);
+    const alert = errorMessage && (
+        <div className="alert alert-danger">{errorMessage}</div>);
 
     const userData = userInfo && (
         <div className="input-field">
@@ -125,23 +164,24 @@ class Callback extends React.Component {
 
     return (
         <div className="container">
+          {redirect}
           {alert}
           <div className="home-app">
             <em>
               Hello there!
             </em>
             <p/>
-              <form>
-                <div className="input-group">
-                  <button
-                      className="btn btn-primary user-credentials-submit"
-                      data-id="user-credentials-submit"
-                      type="button"
-                      onClick={this.handleSignOff}>
-                    Sign Off
-                  </button>
-                </div>
-              </form>
+            <form>
+              <div className="input-group">
+                <button
+                    className="btn btn-primary user-credentials-submit"
+                    data-id="user-credentials-submit"
+                    type="button"
+                    onClick={this.handleSignOff}>
+                  Sign Off
+                </button>
+              </div>
+            </form>
 
             <div className="input-field" id="user-info">
               <a href="#"
@@ -165,11 +205,13 @@ Callback.propTypes = {
     clientSecret: PropTypes.string,
     scope: PropTypes.string.isRequired,
     responseType: PropTypes.string.isRequired,
+    tokenEndpointAuthMethod: PropTypes.string.isRequired,
     grantType: PropTypes.string,
     prompt: PropTypes.string,
     redirectUri: PropTypes.string,
     logoutRedirectUri: PropTypes.string,
-    maxAge: PropTypes.number
+    maxAge: PropTypes.number,
+    //stateParam: PropTypes.string
   }).isRequired
 };
 

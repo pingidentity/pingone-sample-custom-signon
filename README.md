@@ -6,12 +6,12 @@ This service is responsible for initiating the authentication session and making
 Flow endpoint operations are used only to implement custom authentication UIs. 
 OIDC/OAuth 2 requests initiate the flow and redirect the browser to the custom authentication UI (which is configured in the application through the application’s `loginPageUrl` property.)
 
-## Choose Application Type
-PingOne supports several application types, but for this one better to implement **Single page** (runs on the client side after it loads, so it can't keep a client secret) or **Native** ( typically intended for mobile devices) application type with : auth code,  implicit or refresh token grant types.
+## Application Type
+PingOne supports several application types, but for this sample better to choose **Single page** (runs on the client side after it loads, so it can't keep a client secret) or **Native** ( typically intended for mobile devices) application type with : auth code,  implicit or refresh token grant types.
 
 The application type determines the authorization flow steps needed to acquire an access token from the authorization service. 
 
-The following example describe `authorization_code` or `implicit` (is set by default) [authorization flows](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_AuthActivities/p1-a_appAuth/) for the designated application type.
+The following examples describe `authorization_code` and `implicit` [authorization flows](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_AuthActivities/p1-a_appAuth/) for the designated application type.
 
 
 __Authorization code grant type__
@@ -40,7 +40,7 @@ After all login action steps in the flow are completed successfully, the `GET /{
 The authorization service generates the access token for the application after restarting the authorization flow; it does not require a step to call the `/{environmentId}/as/token` endpoint.
 The `response_type=` **`token`** or **`id_token`** **is required**.
 
-## Application,grant and response type relationships
+## Application, grant and response type relationships
 The following table shows the relationships between the application type attribute and the default `grantTypes`, `response_type`, and `tokenEndpointAuthMethod` attributes.
 
 |    Application type   |    Grant type   |    Response type   |    Token endpoint authentication method   |
@@ -73,6 +73,8 @@ You will need the following things:
     For simplicity this sample has it hardcoded as `http://localhost:3000/callback`, where `/callback` is handled by [callback react component](src/components/callback.jsx)
     - `logoutRedirectUri`: The URL to which the browser is redirected after a logout has been performed. *SIGNOFF URLS* values corresponds to this data.
     - `scope`: A string that specifies permissions that determine the resources that the application can access. This parameter is not required, but it is needed to specify accessible resources.
+    - `grantType`: A string that specifies the grant type of the token request. Options are `authorization_code`, `implicit`, and `client_credentials`
+    - `tokenEndpointAuthMethod`: A string that specifies the client authentication methods supported by the token endpoint. This is a required property. Options are `none`, `client_secret_basic`, and `client_secret_post`.
 3. Build a project by `npm install` or `yarn install`
 4. Start an application by `npm start` or `yarn start`
 

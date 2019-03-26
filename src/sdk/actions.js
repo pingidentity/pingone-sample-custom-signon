@@ -1,6 +1,7 @@
 import {Flow} from '../sdk/index';
 import api from './api';
 import _ from "lodash";
+import {generateRandomValue} from "./helpers";
 
 const types = {
   UPDATE_FLOW: 'UPDATE_FLOW',
@@ -31,8 +32,8 @@ const resetFlow = (dispatch) => (apiPath) => {
 };
 
 const authorize = (dispatch) => (environmentId, responseType, clientId,
-    redirectUri, scope) => {
-  return api.authorize(environmentId, responseType, clientId, redirectUri, scope)
+    redirectUri, scope, state, nonce, prompt, maxAge, tokenEndpointAuthMethod) => {
+  return api.authorize(environmentId, responseType, clientId, redirectUri, scope, state, nonce, prompt, maxAge, tokenEndpointAuthMethod)
   .then(flow => {
     dispatch(updateFlowAction(new Flow(flow)));
     return Promise.resolve(flow);
@@ -71,7 +72,6 @@ const recoverUserPassword = (dispatch) => (apiPath, recoveryCode,
     dispatch(updateFlowAction(new Flow(flow), false, 'You successfully recovered your password, ' + _.get(flow, '_embedded.user.username', '')));
     return Promise.resolve(flow);
   })
-
 };
 
 const changeUserPassword = (dispatch) => (apiPath, username, currentPassword,
@@ -82,7 +82,6 @@ const changeUserPassword = (dispatch) => (apiPath, username, currentPassword,
     dispatch(updateFlowAction(new Flow(flow)));
     return Promise.resolve(flow);
   })
-
 };
 
 const sendVerificationCode = (dispatch) => (apiPath) => {

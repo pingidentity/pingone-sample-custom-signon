@@ -3,14 +3,16 @@ const common = {
     logo: require('./logo-pingidentity.png')
   },
   authDetails: {
-    environmentId: "c2c2b4f8-c3da-4b23-abef-457ceaf25591",
-    responseType: "token id_token",
-    clientId: "1eb1030b-36fc-4584-a0c5-6366a539f73a",
-    clientSecret: null,
+    environmentId: "<environmentId>",
+    responseType: "<responseType>",
+    clientId: "<clientId>",
+    clientSecret: "<clientSecret>",
     redirectUri: "http://localhost:3000/callback",
     logoutRedirectUri: "http://localhost:3000",
     scope: "profile address email phone",
     prompt: "login",
+    grantType: "authorization_code",
+    tokenEndpointAuthMethod: "client_secret_post",
     maxAge: 3600
   },
 };
