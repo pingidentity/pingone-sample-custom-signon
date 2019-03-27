@@ -7,7 +7,7 @@ Flow endpoint operations are used only to implement custom authentication UIs.
 OIDC/OAuth 2 requests initiate the flow and redirect the browser to the custom authentication UI (which is configured in the application through the application’s `loginPageUrl` property.)
 
 ## Application Type
-PingOne supports several application types, but for this sample better to choose **Single page** (runs on the client side after it loads, so it can't keep a client secret) or **Native** ( typically intended for mobile devices) application type with : auth code,  implicit or refresh token grant types.
+PingOne supports several application types, but for this sample better to choose **Single page** (runs on the client side after it loads, so it can't keep a client secret) or **[Native](https://tools.ietf.org/html/rfc8252)** ( typically intended for mobile devices) application type with : auth code,  implicit or refresh token grant types.
 
 The application type determines the authorization flow steps needed to acquire an access token from the authorization service. 
 

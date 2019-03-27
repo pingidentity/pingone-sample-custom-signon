@@ -7,7 +7,7 @@ import {generateRandomValue, parseHash} from '../sdk/helpers'
 import UserLogin from './userLogin';
 import ForgotPassword from './forgotPassword'
 import MessageBlock from './message'
-import PasswordEditor from './password'
+import PasswordEditor from './updatePassword'
 import RecoveryCodeAndPasswordForm from './recoveryCodeAndPassword'
 import RegistrationForm from './registration'
 import VerificationCode from './verificationCode'
@@ -123,11 +123,11 @@ class Auth extends React.Component {
     if (flow) {
       const currentViewPath = STATUS_TO_COMPATIBLE_PATHS[_.get(flow, 'status',
           'unknown')];
-      // Check the use case when user is not signed in, but the flow like reset password or new user creation is completed,
-      // to set an application on the sign in page again
+      // Check the flow (i.e reset password or new user creation) other than "user login with username and password" is completed,
+      // so we can set an application on the sign in page again
       const managementFlowCompleted = !isAuthenticated && flow.isCompleted();
       if (!currentViewPath ||
-          (!_.isEqual(location.pathname, PATH.SIGN_ON) && managementFlowCompleted)) {
+          !_.isEqual(location.pathname, PATH.SIGN_ON) && managementFlowCompleted) {
         return (<div>
           <Redirect to={PATH.SIGN_ON}/>
         </div>);

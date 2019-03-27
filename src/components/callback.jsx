@@ -8,7 +8,7 @@ import _ from "lodash";
 import {STATUS} from "../sdk";
 
 /**
- * React component for managing the return entry point of the implicit OAuth 2.0 flow and is expecting "access_token" and "id_token" in a redirect uri.
+ * React component for managing the return entry point of the implicit OAuth 2.0 flow and is expecting "access_token", "id_token" or "code" in a redirect uri.
  * The user will be redirected to this point based on the redirect_uri in config.js - the URL that specifies the return entry point of this application.
  */
 class Callback extends React.Component {
@@ -125,11 +125,13 @@ class Callback extends React.Component {
     } else if (codeMatch && codeMatch[1]) {
       sessionStorage.setItem("code", codeMatch[1]);
     }
+    // Replace current URL without adding it to history entries
+    window.history.replaceState({}, '', '/callback');
   }
 
   render() {
     const {userInfo, redirect, errorMessage} = this.state;
-    // Redirect user to login page in case of  access or id tokens absence
+    // Redirect user to login page in case of access,id tokens or code absence
     if (!(sessionStorage.getItem("access_token") && sessionStorage.getItem(
         "id_token") && !/access_token|id_token/.test(
         window.location.hash)) && !sessionStorage.getItem("code")

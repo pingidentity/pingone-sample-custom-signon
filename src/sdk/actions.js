@@ -1,7 +1,6 @@
 import {Flow} from '../sdk/index';
 import api from './api';
 import _ from "lodash";
-import {generateRandomValue} from "./helpers";
 
 const types = {
   UPDATE_FLOW: 'UPDATE_FLOW',
