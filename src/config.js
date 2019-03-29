@@ -2,16 +2,17 @@ const common = {
   branding: {
     logo: require('./logo-pingidentity.png')
   },
+  // Application authorization details. For more information check "Getting Started" in README.md
   authDetails: {
     environmentId: "<environmentId>",
     responseType: "<responseType>",
     clientId: "<clientId>",
     clientSecret: "<clientSecret>",
+    grantType: "<grantType>",
     redirectUri: "http://localhost:3000/callback",
     logoutRedirectUri: "http://localhost:3000",
     scope: "profile address email phone",
     prompt: "login",
-    grantType: "authorization_code",
     tokenEndpointAuthMethod: "client_secret_post",
     maxAge: 3600
   },

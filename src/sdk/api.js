@@ -16,7 +16,7 @@ import config from "../config";
  * Authorization request to retrieve the flow resource
  *
  * @param environmentId a string that specifies the environment’s UUID.
- * @param responseType a string that specifies the code or token type returned by an authorization request. Options are token, id_token, and code. This is a required property.
+ * @param responseType a string that specifies the code or token type returned by an authorization request. Options are token, id_token, and code. Default values is "token id_token". This is a required property.
  * @param clientId a string that specifies the application’s UUID.
  * @param redirectUri a string that specifies the URL that specifies the return entry point of the application. This is a required property.
  * @param scope a string that specifies permissions that determine the resources that the application can access. This parameter is not required, but it is needed to specify accessible resources.
@@ -27,13 +27,14 @@ import config from "../config";
  * @param acr_values an optional parameter that designates whether the authentication request includes steps for a single-factor or multi-factor authentication flow. This parameter maps to the name of a sign-on policy that must be assigned to the application. For more information, see Sign-on policies.
  * @returns {Promise<T | never>}
  */
-const authorize = (environmentId, responseType, clientId, redirectUri, scope,
+const authorize = (environmentId, responseType='token id_token', clientId, redirectUri, scope,
     state, nonce, prompt = 'login', maxAge, acrValues = null) => {
   let authUrl = `${getBaseApiUrl(
       true)}/${environmentId}/as/authorize?` +
       `response_type=${responseType}&client_id=${clientId}&redirect_uri=${redirectUri}&prompt=${prompt}` +
       (scope ? `&scope=${scope}` : '') +
       (maxAge ? `&max_age=${maxAge}` : '') +
+      (acrValues ? `&acr_values=${acrValues}` : '') +
       (state ? `&state=${state}` : '') +
       (nonce ? `&nonce=${nonce}` : '');
 

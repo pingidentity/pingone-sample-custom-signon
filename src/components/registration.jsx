@@ -18,8 +18,6 @@ class RegistrationForm extends React.Component {
       errorMessage: '',
       isRegistering: false,
       passwordFocused: false,
-      clientValidatedRequirements: validator(props.flow.getPasswordPolicy(), ''),
-      requirementsMet: false,
     };
 
     this.handleUsernameUpdate = this.handleUsernameUpdate.bind(this);
@@ -81,9 +79,7 @@ class RegistrationForm extends React.Component {
             this.setState({
               errorMessage: getServerValidatedRequirementMessage(failedReq, flow.getPasswordPolicy()),
               password: '',
-              passwordVerify: '',
-              clientValidatedRequirements: validator(flow.getPasswordPolicy(), ''),
-              requirementsMet: false,
+              passwordVerify: ''
             });
           } else {
             this.setState({
@@ -115,13 +111,8 @@ class RegistrationForm extends React.Component {
   }
 
   handlePasswordUpdate(event) {
-    const { flow } = this.props;
-    const errors = validator(flow.getPasswordPolicy(), event.target.value);
-
     this.setState({
-      password: event.target.value,
-      clientValidatedRequirements: errors,
-      requirementsMet: !!event.target.value && _.reduce(errors, (result, req) => result && req.isValid, true),
+      password: event.target.value
     });
   }
 
@@ -158,17 +149,17 @@ class RegistrationForm extends React.Component {
       redirect,
       errorMessage,
       isRegistering,
-      clientValidatedRequirements,
-      passwordFocused,
-      requirementsMet,
+      passwordFocused
     } = this.state;
 
     const { flow, message } = this.props;
 
+    const clientValidatedRequirements = validator(flow.getPasswordPolicy(), password);
+    const requirementsTooltip = generateRequirementsTooltip(clientValidatedRequirements, flow);
+    const requirementsMet = !!password && _.reduce(clientValidatedRequirements, (result, req) => result && req.isValid, true);
+
     const doPasswordsDiffer = password !== passwordVerify;
     const isReady = !!(username && email && password && passwordVerify && !doPasswordsDiffer && requirementsMet);
-
-    const requirementsTooltip = generateRequirementsTooltip(clientValidatedRequirements, flow);
 
     const alert = (errorMessage || message ) && (
         (errorMessage || (message && message.isError)) ? (<div className="alert alert-danger">{errorMessage ? errorMessage : message.content}</div>) :
@@ -185,78 +176,84 @@ class RegistrationForm extends React.Component {
               Enter the required information below.
             </div>
           {alert}
-          <form className="form" onSubmit={this.onSubmit}>
-            <div className="input-field">
+          <div>
+            <form className="form" onSubmit={this.onSubmit}>
+              <div className="input-field">
                 <label>Username</label>
                 <input
-                  type="text"
-                  className="text-input"
-                  id="username"
-                  name="username"
-                  placeholder="Username"
-                  value={username}
-                  onChange={this.handleUsernameUpdate}
-                  maxLength={128}
-                  autoFocus
+                    type="text"
+                    className="text-input"
+                    id="username"
+                    name="username"
+                    placeholder="Username"
+                    value={username}
+                    onChange={this.handleUsernameUpdate}
+                    maxLength={128}
+                    autoFocus
                 />
-            </div>
-            <div className="input-field">
-              <label>Email Address</label>
+              </div>
+              <div className="input-field">
+                <label>Email Address</label>
                 <input
-                  type="text"
-                  className="text-input"
-                  id="email"
-                  name="email"
-                  placeholder="Email Address"
-                  value={email}
-                  onChange={this.handleEmailUpdate}
+                    type="text"
+                    className="text-input"
+                    id="email"
+                    name="email"
+                    placeholder="Email Address"
+                    value={email}
+                    onChange={this.handleEmailUpdate}
                 />
-            </div>
-            <div className={(password && requirementsMet && !passwordFocused ? 'input-valid' : 'input-invalid' ) + ' input-field'}>
-              <label>Password</label>
-              <input
-                type="password"
-                className="text-input"
-                id="password"
-                name="password"
-                placeholder="Password"
-                value={password}
-                onChange={this.handlePasswordUpdate}
-                onFocus={this.showTooltipReqs}
-                onBlur={this.hideTooltipReqs}
-              />
-              {
-              (clientValidatedRequirements.length > 0 && passwordFocused && !requirementsMet) && (
-                <div className="tooltip show">
-                  <h4 className="heading heading--4">Minimum Password Requirements:</h4>
-                  <div className="requirements">
-                    {requirementsTooltip}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className={(passwordVerify && !doPasswordsDiffer ? 'input-valid' : 'input-invalid') + ' input-field'}>
-              <label>Verify Password</label>
-              <input
-                type="password"
-                className="text-input"
-                id="verify"
-                name="verify"
-                placeholder="Verify Password"
-                value={passwordVerify}
-                onChange={this.handlePasswordVerifyUpdate}
-              />
-            </div>
-            <button
-              data-id="register-button"
-              className="button"
-              onClick={this.handleSubmit}
-              type="submit"
-              disabled={!isReady}
-            >
-              Save
-            </button>
-          </form>
+              </div>
+              <div className={(password && requirementsMet && !passwordFocused ? 'input-valid' : 'input-invalid' ) + ' input-field'}>
+                <label>Password</label>
+                <input
+                    type="password"
+                    className="text-input"
+                    id="password"
+                    name="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={this.handlePasswordUpdate}
+                    onFocus={this.showTooltipReqs}
+                    onBlur={this.hideTooltipReqs}
+                />
+                {(clientValidatedRequirements.length > 0 && passwordFocused && !requirementsMet) && (
+                    <div className="tooltip show">
+                      <h4 className="heading">Minimum Password Requirements:</h4>
+                      <div className="requirements">
+                        {requirementsTooltip}
+                      </div>
+                    </div>
+                )}
+              </div>
+              <div className={(passwordVerify && !doPasswordsDiffer ? 'input-valid' : 'input-invalid') + ' input-field'}>
+                <label>Verify Password</label>
+                <input
+                    type="password"
+                    className="text-input"
+                    id="verify"
+                    name="verify"
+                    placeholder="Verify Password"
+                    value={passwordVerify}
+                    onChange={this.handlePasswordVerifyUpdate}
+                />
+                {doPasswordsDiffer && (
+                    <div className="tooltip show">
+                      <i className="fa fa-warning" style={{color:'red'}}></i>
+                      <span className="requirement__name">Passwords don’t match. Please try again.</span>
+                    </div>
+                )}
+              </div>
+              <button
+                  data-id="register-button"
+                  className="button"
+                  onClick={this.handleSubmit}
+                  type="submit"
+                  disabled={!isReady}>
+                Save
+              </button>
+            </form>
+          </div>
           <div className="input-field">
               Already have an account? <a data-id="signInBtn" href="#" onClick={this.handleSignInClick}>Sign in</a>
             </div>

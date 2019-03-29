@@ -4,8 +4,7 @@ import PropTypes from 'prop-types';
 import { Redirect } from 'react-router';
 import { PATH } from './auth';
 import {Flow, STATUS} from '../sdk/index';
-
-import { passwordRequirementsValidator as validator, getServerValidatedRequirementMessage, generateRequirementsTooltip } from '../sdk/helpers';
+import { passwordRequirementsValidator, getServerValidatedRequirementMessage, generateRequirementsTooltip } from '../sdk/helpers';
 
 class PasswordEditor extends React.Component {
   constructor(props) {
@@ -19,8 +18,6 @@ class PasswordEditor extends React.Component {
       isValidatingCredentials: false,
       saveAttempted: false,
       newPasswordFocused: false,
-      clientValidatedRequirements: validator(props.flow.getPasswordPolicy(), ''),
-      requirementsMet: false,
       redirect: null,
     };
 
@@ -37,12 +34,8 @@ class PasswordEditor extends React.Component {
   }
 
   handleNewPasswordUpdate(event) {
-    const { flow } = this.props;
-    const errors = validator(flow.getPasswordPolicy(), event.target.value);
     this.setState({
-      newPassword: event.target.value,
-      clientValidatedRequirements: errors,
-      requirementsMet: !!event.target.value && _.reduce(errors, (result, req) => result && req.isValid, true),
+      newPassword: event.target.value
     });
   }
 
@@ -88,9 +81,7 @@ class PasswordEditor extends React.Component {
               currentPassword: '',
               newPassword: '',
               newPasswordVerify: '',
-              clientValidatedRequirements: validator(flow.getPasswordPolicy(), ''),
-              errorMessage: 'Incorrect current password. Please try again.',
-              requirementsMet: false,
+              errorMessage: 'Incorrect current password. Please try again.'
             });
           } else if (_.isEqual(errorTarget, 'newPassword')) {
             const unsatisfiedServerRequirements = _.get(err, 'details[0].innerError.unsatisfiedRequirements', []);
@@ -102,9 +93,7 @@ class PasswordEditor extends React.Component {
               currentPassword: '',
               newPassword: '',
               newPasswordVerify: '',
-              clientValidatedRequirements: validator(flow.getPasswordPolicy(), ''),
-              errorMessage: getServerValidatedRequirementMessage(failedReq, flow.getPasswordPolicy()),
-              requirementsMet: false,
+              errorMessage: getServerValidatedRequirementMessage(failedReq, flow.getPasswordPolicy())
             });
           } else {
             // Edge case where the error detail is INVALID_VALUE, but it's not a value we expect. Should never happen unless an API change happens without updating the UI.
@@ -153,8 +142,6 @@ class PasswordEditor extends React.Component {
       newPasswordVerify,
       errorMessage,
       isValidatingCredentials,
-      clientValidatedRequirements,
-      requirementsMet,
       redirect,
       saveAttempted,
       newPasswordFocused,
@@ -162,6 +149,8 @@ class PasswordEditor extends React.Component {
 
     const { flow, feedbackMessage, message } = this.props;
 
+    const clientValidatedRequirements = passwordRequirementsValidator(flow.getPasswordPolicy(), newPassword);
+    const requirementsMet = !!newPassword && _.reduce(clientValidatedRequirements, (result, req) => result && req.isValid, true);
     const requirementsTooltip = generateRequirementsTooltip(clientValidatedRequirements, flow);
 
     const alert = (errorMessage || message ) && (
@@ -211,7 +200,7 @@ class PasswordEditor extends React.Component {
               />
               {(clientValidatedRequirements.length > 0 && newPasswordFocused && !requirementsMet) && (
                 <div className="tooltip show">
-                  <h4 className="heading heading--4">Minimum Password Requirements:</h4>
+                  <h4 className="heading">Minimum Password Requirements:</h4>
                   <div className="requirements">
                     {requirementsTooltip}
                   </div>
@@ -229,12 +218,17 @@ class PasswordEditor extends React.Component {
                 value={newPasswordVerify}
                 onChange={this.handleNewPasswordVerifyUpdate}
               />
+              {doPasswordsDiffer && (
+                  <div className="tooltip show">
+                    <i className="fa fa-warning" style={{color:'red'}}></i>
+                    <span className="requirement__name">Passwords don’t match. Please try again.</span>
+                  </div>
+              )}
             </div>
             <button
               className="button"
               disabled={!currentPassword || !newPassword || !newPasswordVerify || doPasswordsDiffer || !requirementsMet}
-              type="submit"
-            >
+              type="submit">
               Save
             </button>
           </form>

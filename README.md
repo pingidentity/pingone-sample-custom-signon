@@ -21,7 +21,7 @@ This flow uses the `GET /{environmentId}/flows/{flowId}` endpoint to retrieve th
 
 `curl --request GET \
   --url 'https://auth.pingone.com/{environmentID}/as/resume?flowId={flowID}'`
-After restarting the authorization flow, you can submit the authorization code through a request to the `POST /{environmentId}/as/token` endpoint to create the access token.
+After restarting the authorization flow, you can submit the authorization code through a request to the `POST /{environmentId}/as/token` endpoint to exchange it for an access `token` and an `id_token`.
 
 `curl --request POST \
   --url 'https://auth.pingone.com/{envID}/as/token' \
@@ -68,12 +68,13 @@ You will need the following things:
     - `client_id`: *Required*. Your application's client UUID. You can also find this value at Application's Settings right under the 
     Application name.
     - `clientSecret`: A string that specifies the the application’s client secret. This property is required only if the application’s `tokenEndpointAuthMethod` property is set to `CLIENT_SECRET_POST`.
-    - `responseType`: A string that specifies the code or token type returned by an authorization request. Options are `token`, `id_token`, and `code`. This is a required property.
+    - `responseType`: A string that specifies the code or token type returned by an authorization request. Options are `token`, `id_token`, and `code`. The value **MUST** be the `code` for requesting an authorization code flow, `id_token token` for the implicit flow, or `code id_token` for hybrid flow(a scenario when you can have a long lived session in your application and get tokens back immediately from the authorization endpoint).
+    For more variants please check [Definitions of Multiple-Valued Response Type Combinations](https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html#Combinations) topic.
+    - `grantType`: A string that specifies the grant type of the token request. Options are `authorization_code`, `implicit`(is set by default), and `client_credentials`. So, if you have `responseType=code`, then define `redirectUri=authorization_code`.
     - `redirectUri`: *Required*. The URL to which the PingOne will redirect the user's browser after authorization has been granted by the user. *REDIRECT URLS* values corresponds to this data. The Access and ID Token will be available in the hash fragment of this URL. 
     For simplicity this sample has it hardcoded as `http://localhost:3000/callback`, where `/callback` is handled by [callback react component](src/components/callback.jsx)
     - `logoutRedirectUri`: The URL to which the browser is redirected after a logout has been performed. *SIGNOFF URLS* values corresponds to this data.
     - `scope`: A string that specifies permissions that determine the resources that the application can access. This parameter is not required, but it is needed to specify accessible resources.
-    - `grantType`: A string that specifies the grant type of the token request. Options are `authorization_code`, `implicit`, and `client_credentials`
     - `tokenEndpointAuthMethod`: A string that specifies the client authentication methods supported by the token endpoint. This is a required property. Options are `none`, `client_secret_basic`, and `client_secret_post`.
 3. Build a project by `npm install` or `yarn install`
 4. Start an application by `npm start` or `yarn start`
@@ -133,12 +134,13 @@ rootReducer = combineReducers({flow: flowReducer, user: userReducer})
 
 3. `componentDidMount` is only called once in the lifecycle of any component, re-render will not reinitialize the component. `componentDidUpdate` will be called where you can manage your logic.
 4. Redux state doesn't remain after a page reload. `window.location = '/addMembers'` cause a page reload and it's not the correct way to programmatically navigate to another page when you use react-router. Instead of that you should use `this.props.history.push('/addMembers')`.
-
+5. Reacts [`<Switch>`](https://github.com/ReactTraining/react-router/blob/master/packages/react-router/docs/api/Switch.md) is used in [index.js](src/index.js) since it renders a route exclusively, in contrast to a bunch of `<Route>`s, where every `<Route>` that matches the location renders inclusively.
+So, everything related to PingOne authentication flows are caught by `Auth` component. Other application specific routes can be explicitly defined within `Switch`. For example, the `Callback` component, that corresponds to the entry point of the application - URL to which the browser is redirected after a login has been performed.
 
 # Best Practises
-1. keep UI state and transitory data (such as form inputs) in local state (i.e [controlled component](https://reactjs.org/docs/forms.html#controlled-components) to fill out a form).
-2. keep data that you intend to share across components in Redux store.
-3. we used [`redux-freeze`](https://www.npmjs.com/package/redux-freeze) middleware that is useful during development mode to ensure that no part of the app accidentally mutates the state (error will be thrown by the runtime).
+1. Keep UI state and transitory data (such as form inputs) in local state (i.e [controlled component](https://reactjs.org/docs/forms.html#controlled-components) to fill out a form).
+2. Keep data that you intend to share across components in Redux store.
+3. We used [`redux-freeze`](https://www.npmjs.com/package/redux-freeze) middleware that is useful during development mode to ensure that no part of the app accidentally mutates the state (error will be thrown by the runtime).
 
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

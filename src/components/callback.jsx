@@ -132,11 +132,8 @@ class Callback extends React.Component {
   render() {
     const {userInfo, redirect, errorMessage} = this.state;
     // Redirect user to login page in case of access,id tokens or code absence
-    if (!(sessionStorage.getItem("access_token") && sessionStorage.getItem(
-        "id_token") && !/access_token|id_token/.test(
-        window.location.hash)) && !sessionStorage.getItem("code")
-        && !/code/.test(
-            window.location.href)) {
+    if (!(sessionStorage.getItem("access_token") && sessionStorage.getItem("id_token")) && !/access_token|id_token/.test(window.location.hash)
+        && !sessionStorage.getItem("code") && !/code/.test(window.location.href)) {
       return (<Redirect to={PATH.SIGN_ON}/>);
     }
 

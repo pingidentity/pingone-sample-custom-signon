@@ -160,60 +160,34 @@ class Auth extends React.Component {
                    render={(routeProps) =>
                        <PasswordEditor {...routeProps}{...this.props}
                                        flow={flow} message={message}/>}/>
-            <Route
-                path={PATH.FORGOT_PASSWORD_USERNAME}
-                exact
-                render={(routeProps) =>
-                    (<ForgotPassword
-                        {...routeProps}{...this.props}
-                        flow={flow} message={message}
-                    />)
-                }
-            />
-            <Route
-                path={PATH.EXPIRED}
-                exact
-                render={(routeProps) =>
-                    (<PasswordEditor
-                        {...routeProps}{...this.props}
-                        flow={flow} message={message}
-                        feedbackMessage="Your password has expired. Please create a new one."
-                    />)
-                }
-            />
-            <Route
-                path={PATH.REGISTER}
-                exact
-                render={(routeProps) =>
-                    (<RegistrationForm
-                        {...routeProps}{...this.props}
-                        flow={flow} message={message}
-                    />)
-                }
-            />
-            <Route
-                path={PATH.VERIFY}
-                exact
-                render={(routeProps) =>
-                    (<VerificationCode
-                        {...routeProps}{...this.props}
-                        flow={flow} message={message}
-                    />)
-                }
-            />
-            <Route
-                path={PATH.RECOVERY_CODE_AND_PASSWORD}
-                exact
-                render={(routeProps) =>
-                    (<RecoveryCodeAndPasswordForm
-                        {...routeProps}{...this.props}
-                        flow={flow} message={message}
-                    />)
-                }
-            />
+            <Route path={PATH.FORGOT_PASSWORD_USERNAME} exact
+                   render={(routeProps) =>
+                       <ForgotPassword
+                           {...routeProps}{...this.props}
+                           flow={flow} message={message}/>}/>
+            <Route path={PATH.EXPIRED} exact
+                   render={(routeProps) =>
+                       <PasswordEditor
+                           {...routeProps}{...this.props}
+                           flow={flow} message={message}
+                           feedbackMessage="Your password has expired. Please create a new one."/>}/>
+            <Route path={PATH.REGISTER} exact
+                   render={(routeProps) =>
+                       (<RegistrationForm
+                           {...routeProps}{...this.props}
+                           flow={flow} message={message}/>)}/>
+            <Route path={PATH.VERIFY} exact
+                   render={(routeProps) =>
+                       <VerificationCode
+                           {...routeProps}{...this.props}
+                           flow={flow} message={message}/>}/>
+            <Route path={PATH.RECOVERY_CODE_AND_PASSWORD} exact
+                   render={(routeProps) =>
+                       <RecoveryCodeAndPasswordForm
+                           {...routeProps}{...this.props}
+                           flow={flow} message={message}/>}/>
             <Route path={PATH.UNABLE_TO_SIGN_IN} exact
-                   component={MessageBlock}
-            />
+                   component={MessageBlock}/>
           </div>
         </div>
     );
@@ -222,23 +196,18 @@ class Auth extends React.Component {
 };
 
 Auth.propTypes = {
-  location: PropTypes.shape({
-    state: PropTypes.shape({
-      currentPassword: PropTypes.string,
-      username: PropTypes.string,
-    }),
-  }).isRequired,
+  location: PropTypes.shape().isRequired,
 
   branding: PropTypes.shape({
     logo: PropTypes.string.isRequired,
   }).isRequired,
 
+  // Application authorization details from config.js
   authDetails: PropTypes.shape({
     environmentId: PropTypes.string.isRequired,
     clientId: PropTypes.string.isRequired,
     clientSecret: PropTypes.string,
     scope: PropTypes.string.isRequired,
-    grantType: PropTypes.string,
     prompt: PropTypes.string,
     responseType: PropTypes.string.isRequired,
     redirectUri: PropTypes.string.isRequired,

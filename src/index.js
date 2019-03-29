@@ -4,7 +4,7 @@ import {Provider} from 'react-redux';
 import {BrowserRouter, Route, Switch} from 'react-router-dom';
 import './index.css';
 import config from "./config";
-import AppContainer from './containers/container';
+import Auth from './containers/container';
 import {applyMiddleware, combineReducers, compose, createStore} from 'redux';
 import thunk from 'redux-thunk';
 import freeze from 'redux-freeze';
@@ -22,11 +22,9 @@ render(
       <BrowserRouter>
         <Switch>
           <Route exact path='/callback' render={(routeProps) =>
-              <Callback {...routeProps} {...config}/>}
-          />
+              <Callback {...routeProps} {...config}/>}/>
           <Route render={(routeProps) =>
-              <AppContainer {...routeProps}{...config}/>}
-          />
+              <Auth {...routeProps}{...config}/>}/>
         </Switch>
       </BrowserRouter>
     </Provider>,

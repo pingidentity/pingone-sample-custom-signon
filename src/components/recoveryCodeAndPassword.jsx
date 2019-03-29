@@ -2,7 +2,7 @@ import _ from 'lodash';
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Flow } from '../sdk/index';
-import { passwordRequirementsValidator as validator, getServerValidatedRequirementMessage, generateRequirementsTooltip } from '../sdk/helpers';
+import { passwordRequirementsValidator, getServerValidatedRequirementMessage, generateRequirementsTooltip } from '../sdk/helpers';
 import {Redirect} from "react-router";
 import {PATH} from "./auth";
 
@@ -21,10 +21,7 @@ class RecoveryCodeAndPasswordForm extends React.Component {
       isSubmitting: false,
       isResending: false,
       newPasswordFocused: false,
-      clientValidatedRequirements: validator(props.flow.getPasswordPolicy(), ''),
-      requirementsMet: false,
-      redirect: null,
-      flow: props.flow
+      redirect: null
     };
 
     this.handleRecoveryCodeUpdate = this.handleRecoveryCodeUpdate.bind(this);
@@ -42,12 +39,8 @@ class RecoveryCodeAndPasswordForm extends React.Component {
   }
 
   handleNewPasswordUpdate(event) {
-    const {flow} = this.props;
-    const errors = validator(flow.getPasswordPolicy(), event.target.value);
     this.setState({
-      newPassword: event.target.value,
-      clientValidatedRequirements: errors,
-      requirementsMet: !!event.target.value && _.reduce(errors, (result, req) => result && req.isValid, true),
+      newPassword: event.target.value
     });
   }
 
@@ -81,8 +74,6 @@ class RecoveryCodeAndPasswordForm extends React.Component {
             recoveryCode: '',
             newPassword: '',
             newPasswordVerify: '',
-            clientValidatedRequirements: validator(flow.getPasswordPolicy(), ''),
-            requirementsMet: false,
             errorMessage: '',
             isResending: false,
           });
@@ -163,8 +154,6 @@ class RecoveryCodeAndPasswordForm extends React.Component {
               newPassword: '',
               newPasswordVerify: '',
               errorMessage: 'Incorrect recovery code. Please try again.',
-              clientValidatedRequirements: validator(flow.getPasswordPolicy(), ''),
-              requirementsMet: false,
               isSubmitting: false
             });
           } else if (_.isEqual(errorTarget, 'newPassword')) {
@@ -178,8 +167,6 @@ class RecoveryCodeAndPasswordForm extends React.Component {
               newPasswordVerify: '',
               errorMessage: getServerValidatedRequirementMessage(failedReq, flow.getPasswordPolicy()),
               feedbackMessage: 'Please try again to set a new password with existed recovery code',
-              clientValidatedRequirements: validator(flow.getPasswordPolicy(), ''),
-              requirementsMet: false,
               isSubmitting: false
             });
           } else {
@@ -218,8 +205,6 @@ class RecoveryCodeAndPasswordForm extends React.Component {
       newPasswordVerify,
       feedbackMessage,
       errorMessage,
-      clientValidatedRequirements,
-      requirementsMet,
       redirect,
       newPasswordFocused,
       isResending,
@@ -228,6 +213,8 @@ class RecoveryCodeAndPasswordForm extends React.Component {
 
     const {flow, message} = this.props;
 
+    const clientValidatedRequirements = passwordRequirementsValidator(flow.getPasswordPolicy(), newPassword);
+    const requirementsMet = !!newPassword && _.reduce(clientValidatedRequirements, (result, req) => result && req.isValid, true);
     const requirementsTooltip = generateRequirementsTooltip(clientValidatedRequirements, flow);
 
     const alert = (errorMessage || message ) && (
@@ -283,7 +270,7 @@ class RecoveryCodeAndPasswordForm extends React.Component {
               />
               {(clientValidatedRequirements.length > 0 && newPasswordFocused && !requirementsMet) && (
                 <div className="tooltip show">
-                  <h4 className="heading heading--4">Minimum Password Requirements:</h4>
+                  <h4 className="heading">Minimum Password Requirements:</h4>
                   <div className="requirements">
                     {requirementsTooltip}
                   </div>
@@ -301,6 +288,12 @@ class RecoveryCodeAndPasswordForm extends React.Component {
                 value={newPasswordVerify}
                 onChange={this.handleNewPasswordVerifyUpdate}
               />
+              {doPasswordsDiffer && (
+                  <div className="tooltip show">
+                    <i className="fa fa-warning" style={{color:'red'}}></i>
+                    <span className="requirement__name">Passwords don’t match. Please try again.</span>
+                  </div>
+              )}
             </div>
             <div className="input-field">
               <button
@@ -308,8 +301,7 @@ class RecoveryCodeAndPasswordForm extends React.Component {
                   className="button"
                   onClick={this.handleSubmit}
                   disabled={!recoveryCode || !newPassword || !newPasswordVerify || doPasswordsDiffer || !requirementsMet}
-                  type="submit"
-              >
+                  type="submit">
                 Save
               </button>
             </div>
