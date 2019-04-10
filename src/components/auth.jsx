@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Redirect, Route} from 'react-router';
 import _ from 'lodash';
-import {generateRandomValue, parseHash} from '../sdk/helpers'
+import {getURLParameter} from '../sdk/helpers'
 
 import UserLogin from './userLogin';
 import ForgotPassword from './forgotPassword'
@@ -20,8 +20,7 @@ export const PATH = {
   REGISTER: '/register',
   VERIFY: '/verify',
   FORGOT_PASSWORD_USERNAME: '/forgotPasswordUsername',
-  RECOVERY_CODE_AND_PASSWORD: '/recoveryCode',
-  CALLBACK: '/callback'
+  RECOVERY_CODE_AND_PASSWORD: '/recoveryCode'
 };
 
 // Maps each initial status to list of compatible paths; 1st path in list is default
@@ -32,8 +31,7 @@ export const STATUS_TO_COMPATIBLE_PATHS = {
     PATH.UNABLE_TO_SIGN_IN, PATH.FORGOT_PASSWORD_USERNAME],
   PASSWORD_REQUIRED: [PATH.SIGN_ON],
   RECOVERY_CODE_REQUIRED: [PATH.RECOVERY_CODE_AND_PASSWORD],
-  VERIFICATION_CODE_REQUIRED: [PATH.VERIFY],
-  COMPLETED: [PATH.SIGN_ON]
+  VERIFICATION_CODE_REQUIRED: [PATH.VERIFY]
 };
 
 class Auth extends React.Component {
@@ -45,58 +43,39 @@ class Auth extends React.Component {
     }
   }
 
-  componentDidUpdate(prevProps) {
-    if (!_.isEqual(this.props.authState, prevProps.authState) ||
-        !_.isEqual(this.props.authDetails, prevProps.authDetails)) {
-      this.authorize();
-    }
-  }
-
   componentDidMount() {
-    this.authorize();
-  }
-
-  shouldAuthorize() {
-    const {authState, authDetails} = this.props;
-
-    const flow = authState.flow;
-    const notSignedIn = !/access_token|id_token|error|done/.test(
-        window.location.hash);
+    const environmentId = getURLParameter('environmentId');
+    const flowId = getURLParameter('flowId');
+    const error = getURLParameter('error');
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-    let shouldAuthorize = false;
-    if (!uuidRegex.test(authDetails.environmentId)) {
+    if (error) {
       this.setState({
-        errorMessage: `Invalid environmentId parameter ${authDetails.environmentId} : it should be a valid UUID.  Please check it in your config.js parameters file.`,
-      });
-    } else if (flow && !uuidRegex.test(flow.id)) {
+        errorMessage: JSON.parse(decodeURIComponent(error))
+      })
+    } else if (!uuidRegex.test(environmentId)) {
       this.setState({
-        errorMessage: `Invalid flowId parameter ${flow.id} : it should be a valid UUID. Please contact PingOne for Customers Developers Support. `,
-      });
-    } else if (!flow && notSignedIn) {
-      shouldAuthorize = true;
-    }
+        errorMessage: `Invalid environmentId parameter: ${environmentId}. environmentId should be a valid UUID.`
+      })
 
-    return shouldAuthorize;
-  }
+    } else if (!error && !uuidRegex.test(flowId)) {
+      this.setState({
+        errorMessage: `Invalid flowId parameter: ${flowId}. flowId should be a valid UUID.`
+      })
 
-  authorize() {
-    const {authDetails, authActions} = this.props;
-
-    if (this.shouldAuthorize()) {
-      let state = generateRandomValue();
-      let nonce = generateRandomValue();
-      sessionStorage.setItem("state", state);
-
-      authActions.authorize(authDetails.environmentId,
-          authDetails.responseType, authDetails.clientId,
-          authDetails.redirectUri, authDetails.scope,
-          state, nonce,
-          authDetails.prompt, authDetails.maxAge)
-      .catch(err => {
-        this.setState({
-          errorMessage: `An unexpected error has occurred. ${err}`,
-        });
+    } else if (!this.props.authState.flow) {
+      this.props.authActions.getFlow(environmentId, flowId)
+      .catch(error => {
+        if (_.isEqual(_.get(error, 'code', null), 'NOT_FOUND')) {
+          this.setState({
+            isSubmitting: false,
+            errorMessage: `There is no such flow resource with ${flowId} id.`
+          });
+        } else {
+          this.setState({
+            errorMessage: 'An unexpected error has occurred while retrieving flow resource.',
+          });
+        }
       });
     }
   }
@@ -107,42 +86,39 @@ class Auth extends React.Component {
 
     if (errorMessage) {
       return <MessageBlock messageType={"error"} message={errorMessage}/>;
-    } else if (/error/.test(window.location.hash)) {
-      let errorMsg = parseHash();
-      return <MessageBlock messageType={"error"} message={errorMsg.error + ': '
-      + errorMsg.error_description}/>;
-    } else if (!_.isEmpty(window.location.search)) {
-      // Clear current history entry before further operations
-      window.history.replaceState({}, '', '/');
     }
 
     const flow = _.get(authState, 'flow', null);
-    const isAuthenticated = _.get(authState, 'isAuthenticated', null);
     const message = _.get(authState, 'message', null);
+
+    if (flow && (flow.isCompleted() || flow.isFailed())) {
+      // Redirect to the resume endpoint
+      window.location.assign(flow.resumeUrl);
+      window.history.replaceState({}, '', '#done');
+      return null;
+    }
 
     if (flow) {
       const currentViewPath = STATUS_TO_COMPATIBLE_PATHS[_.get(flow, 'status',
           'unknown')];
-      // Check the flow (i.e reset password or new user creation) other than "user login with username and password" is completed,
-      // so we can set an application on the sign in page again
-      const managementFlowCompleted = !isAuthenticated && flow.isCompleted();
-      if (!currentViewPath ||
-          !_.isEqual(location.pathname, PATH.SIGN_ON) && managementFlowCompleted) {
+      if (!currentViewPath) {
         return (<div>
           <Redirect to={PATH.SIGN_ON}/>
         </div>);
-      } else if (!(_.some(currentViewPath,
-          (path) => _.startsWith(path, location.pathname)))
-          && !isAuthenticated) {
+      }
+      // Redirect to an appropriate component if the current path is '/' and all next paths this application should follow to are not '/'
+      else if (_.isEqual(location.pathname, PATH.SIGN_ON) && !(_.some(
+          currentViewPath, (path) => _.isEqual(location.pathname, path)))) {
         return (<div>
           <Redirect to={currentViewPath[0]}/>
         </div>)
       }
-
-      if (flow.isCompleted() && isAuthenticated) {
-        // Redirect to the resume endpoint
-        window.location.assign(flow.resumeUrl);
-        return null;
+      // Redirect to an appropriate component if all next paths do not start with the current path
+      else if (!(_.some(currentViewPath,
+          (path) => _.startsWith(location.pathname, path)))) {
+        return (<div>
+          <Redirect to={currentViewPath[0]}/>
+        </div>)
       }
     }
 
@@ -196,27 +172,14 @@ class Auth extends React.Component {
 };
 
 Auth.propTypes = {
-  location: PropTypes.shape().isRequired,
+  location: PropTypes.shape({}).isRequired,
 
   branding: PropTypes.shape({
     logo: PropTypes.string.isRequired,
   }).isRequired,
 
-  // Application authorization details from config.js
-  authDetails: PropTypes.shape({
-    environmentId: PropTypes.string.isRequired,
-    clientId: PropTypes.string.isRequired,
-    clientSecret: PropTypes.string,
-    scope: PropTypes.string.isRequired,
-    prompt: PropTypes.string,
-    responseType: PropTypes.string.isRequired,
-    redirectUri: PropTypes.string.isRequired,
-    logoutRedirectUri: PropTypes.string,
-    maxAge: PropTypes.number
-  }).isRequired,
-
   authActions: PropTypes.shape({
-    authorize: PropTypes.func.isRequired,
+    getFlow: PropTypes.func.isRequired,
   }).isRequired,
 
   authState: PropTypes.shape({
