@@ -1,6 +1,6 @@
 const common = {
   branding: {
-    logo: require('./logo-pingidentity.png')
+    logo: require('./logo.png')
   }
 };
 
