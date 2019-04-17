@@ -8,7 +8,7 @@ import {applyMiddleware, combineReducers, compose, createStore} from 'redux';
 import thunk from 'redux-thunk';
 import freeze from 'redux-freeze';
 import reducer from './reducers/index';
-import {MemoryRouter, Route} from "react-router";
+import {MemoryRouter} from "react-router";
 
 const devToolsExtension = window.__REDUX_DEVTOOLS_EXTENSION__
     ? window.__REDUX_DEVTOOLS_EXTENSION__() : (f) => f;
@@ -19,8 +19,7 @@ const store = composeStore(combineReducers(reducer));
 render(
     <Provider store={store}>
       <MemoryRouter>
-        <Route render={(routeProps) =>
-            <Container {...routeProps}{...config} />} />
+        <Container {...config} />
       </MemoryRouter>
     </Provider>,
     document.getElementById('root')

@@ -54,7 +54,7 @@ The following table shows the relationships between the application type attribu
 
 1. Clone a source code
 `git clone git@github.com:pingidentity/pingone-customers-sample-custom-signon.git . `
-2. To update PingOne for Customers API public endpoints, application logo update [config.js](./src/config.js) file.
+2. To change PingOne for Customers API public endpoints, application logo or [custom environment variables](https://facebook.github.io/create-react-app/docs/adding-custom-environment-variables)(i.e `REACT_APP_STAGE`), please navigate to [config.js](./src/config.js) file.
 3. Build a project by `npm install` or `yarn install`
 4. Start an application by `npm start` or `yarn start`
 

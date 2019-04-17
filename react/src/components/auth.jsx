@@ -106,13 +106,6 @@ class Auth extends React.Component {
           <Redirect to={PATH.SIGN_ON}/>
         </div>);
       }
-      // Redirect to an appropriate component if the current path is '/' and all next paths this application should follow to are not '/'
-      else if (_.isEqual(location.pathname, PATH.SIGN_ON) && !(_.some(
-          currentViewPath, (path) => _.isEqual(location.pathname, path)))) {
-        return (<div>
-          <Redirect to={currentViewPath[0]}/>
-        </div>)
-      }
       // Redirect to an appropriate component if all next paths do not start with the current path
       else if (!(_.some(currentViewPath,
           (path) => _.startsWith(location.pathname, path)))) {
