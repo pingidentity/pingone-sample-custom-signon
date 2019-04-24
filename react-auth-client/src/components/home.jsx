@@ -1,5 +1,6 @@
 import React from 'react';
 import api from '../sdk/api'
+import UserInfo from './userInfo'
 import PropTypes from 'prop-types';
 import _ from "lodash";
 
@@ -17,68 +18,6 @@ class Home extends React.Component {
 
     this.handleSignIn = this.handleSignIn.bind(this);
     this.handleSignOff = this.handleSignOff.bind(this);
-    this.handleUserInfo = this.handleUserInfo.bind(this);
-  }
-
-  getAccessToken() {
-    let accessToken = sessionStorage.getItem("access_token");
-    if (!accessToken) {
-      return api.getAccessToken(
-          this.props.authDetails.environmentId,
-          this.props.authDetails.clientId,
-          this.props.authDetails.clientSecret,
-          this.props.authDetails.redirectUri,
-          this.props.authDetails.grantType,
-          this.props.authDetails.tokenEndpointAuthMethod,
-          sessionStorage.getItem("code"))
-      .then(token => {
-        sessionStorage.setItem("access_token", token.access_token);
-        sessionStorage.setItem("id_token", token.id_token);
-        sessionStorage.setItem("expires_in", token.expires_in);
-        sessionStorage.setItem("scope", token.scope);
-        return Promise.resolve(token.access_token);
-      })
-    } else {
-      return Promise.resolve(accessToken);
-    }
-  }
-
-  handleUserInfo() {
-    this.getAccessToken()
-    .then(accessToken => {
-      return api.getUserInfo(this.props.authDetails.environmentId, accessToken)
-    })
-    .then(result => {
-      this.setState({
-        userInfo: result
-      });
-    })
-    .catch(error => {
-      const errorDetail = _.get(error, 'details[0].code', null);
-      if (_.isEqual(errorDetail, 'INVALID_VALUE')) {
-        if (_.get(error, 'details[0].message', null).includes(
-            "Access token expired")) {
-          this.setState({
-            errorMessage: 'Your access token is expired. Please login again.'
-          });
-        } else {
-          this.setState({
-            errorMessage: _.get(error, 'details[0].message', null)
-          });
-        }
-      } else if (errorDetail) {
-        this.setState({
-          errorMessage: errorDetail + _.get(error, 'details[0].message', null)
-        });
-      } else if (_.get(error, 'error', null) || _.get(error,
-          'error_description', null)) {
-        this.setState({
-          errorMessage: _.get(error, 'error', null) + ': ' + _.get(error,
-              'error_description', null)
-        });
-      }
-      return Promise.reject(error);
-    })
   }
 
   handleSignIn() {
@@ -160,53 +99,25 @@ class Home extends React.Component {
   }
 
   render() {
-    const {userInfo, errorMessage} = this.state;
+    const {errorMessage} = this.state;
 
     let alert = errorMessage && (
         <div className="alert alert-danger">{errorMessage}</div>
     );
 
-    const isNotAuthenticated = !(sessionStorage.getItem("access_token") && sessionStorage.getItem(
-        "id_token")) && !/access_token|id_token/.test(window.location.hash)
+    const isNotAuthenticated = !(sessionStorage.getItem("access_token")
+        && sessionStorage.getItem(
+            "id_token")) && !/access_token|id_token/.test(window.location.hash)
         && !sessionStorage.getItem("code") && !/code/.test(
             window.location.href);
-
-    const userData = userInfo ? (
-            <div className="input-field">
-              <table className="table">
-                <thead>
-                <tr>
-                  <th>Claim</th>
-                  <th>Value</th>
-                </tr>
-                </thead>
-                <tbody>
-                {Object.keys(userInfo).map(key => (
-                    <tr key={key}>
-                      <td>{key}</td>
-                      <td>{userInfo[key]}</td>
-                    </tr>
-                ))}
-                </tbody>
-              </table>
-            </div>
-        ) :
-        (
-            <div className="input-field" id="user-info">
-              <a href="#" onClick={this.handleUserInfo} id="show-user-info">
-                Show user information
-              </a>
-            </div>
-        );
 
     const content = isNotAuthenticated ?
         (
             <div id="signInView">
               <p>You are not currently authenticated. Click Sign On to get
                 started.</p>
-              <div className="input-group">
-                <button type="button" className="btn"
-                        onClick={this.handleSignIn}>Sign On
+              <div className="input-field">
+                <button type="button" onClick={this.handleSignIn}>Sign On
                 </button>
               </div>
             </div>
@@ -216,13 +127,13 @@ class Home extends React.Component {
                 Congratulations! This is a secure resource.
               </em>
               <p/>
-              <div className="input-group">
+              <div className="input-field">
                 <button type="button" onClick={this.handleSignOff}> Sign Off
                 </button>
               </div>
-              {userData}
+              <UserInfo authDetails={this.props.authDetails}/>
             </div>
-        ) ;
+        );
 
     return (
         <div className="container">

@@ -2,8 +2,6 @@ import _ from 'lodash';
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Flow, STATUS} from "../sdk";
-import {Redirect} from "react-router";
-import {PATH} from "./auth";
 
 class VerificationCode extends React.Component {
   constructor(props) {
