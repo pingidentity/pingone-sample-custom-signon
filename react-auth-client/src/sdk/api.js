@@ -1,19 +1,17 @@
 /**
- * PingOne authentication flow and OpenID Connect/OAuth 2 protocol API.
- *
- * Contains functions that correspond to steps needed to make it through a PingOne authentication flow.
- * Each function corresponds with an action the UI needs to take and call function(s) from actions.js
+ * PingOne OpenID Connect/OAuth 2 protocol API
  */
 import _ from "lodash";
 import request from "superagent";
 import config from "../config";
 
+
 /******************************************************************************
- *         PingOne Authentication Flow Actions API
+ *         OAuth 2/OpenID Connect Protocol API
  ******************************************************************************/
 
 /**
- * Authorization request to retrieve the flow resource
+ *  Authorize the client
  *
  * @param environmentId a string that specifies the environment’s UUID.
  * @param responseType a string that specifies the code or token type returned by an authorization request. Options are token, id_token, and code. Default values is "token id_token". This is a required property.
@@ -37,115 +35,9 @@ const authorize = (environmentId, responseType='token id_token', clientId, redir
       (acrValues ? `&acr_values=${acrValues}` : '') +
       (state ? `&state=${state}` : '') +
       (nonce ? `&nonce=${nonce}` : '');
+  window.location.replace(authUrl);
 
-  // Initiate an authorization request
-  return get(authUrl)
-  // Retrieve the flow resource
-  .then(result => {
-    const flowId = decomposeUrl(result.xhr.responseURL).queryParams['flowId'];
-
-    if (flowId) {
-      return get(`${getBaseApiUrl(true)}/${environmentId}/flows/${flowId}`,
-          true)
-    } else {
-      return Promise.reject(
-          "Please check authorization request. There is no flowID embedded in the Location header.");
-    }
-  })
 };
-
-/**
- *  Login user
- * @param apiPath PingOne for Customers authorization and authentication endpoint
- * @param username user name
- * @param password user password
- */
-const signOn = (apiPath, username, password) => {
-  return pingPost(apiPath, 'usernamePassword.check+json', {username, password});
-};
-
-/**
- * Recover a user’s forgotten password.
- * @param apiPath PingOne for Customers authorization and authentication endpoint
- * @param username user name
- */
-const forgotPassword = (apiPath, username) => {
-  return pingPost(apiPath, 'password.forgot+json', {username});
-};
-
-/**
- * Send the OTP to the user. The OTP is a randomly generated eight-character alphanumeric string sent to the user’s email address, and the code is valid for five minutes.
- * @param apiPath PingOne for Customers authorization and authentication endpoint
- */
-const sendRecoveryCode = (apiPath) => {
-  return pingPost(apiPath, 'password.sendRecoveryCode+json');
-};
-
-/**
- * Recover the account and set a new password.
- * @param apiPath PingOne for Customers authorization and authentication endpoint
- * @param recoveryCode
- * @param newPassword
- */
-const recoverUserPassword = (apiPath, recoveryCode,
-    newPassword) => {
-  return pingPost(apiPath, 'password.recover+json',
-      {recoveryCode, newPassword});
-};
-
-/**
- * Change (or reset) the user’s password.
- * @param apiPath PingOne for Customers authorization and authentication endpoint
- * @param username user name
- * @param currentPassword
- * @param newPassword
- */
-const changeUserPassword = (apiPath, username, currentPassword,
-    newPassword) => {
-  return pingPost(apiPath, 'password.reset+json',
-      {currentPassword, newPassword});
-};
-
-/**
- * Update (or reset) a flow orchestration session.
- * @param apiPath PingOne for Customers authorization and authentication endpoint
- */
-const resetFlow = (apiPath) => {
-  return pingPost(apiPath, 'session.reset+json', {})
-};
-
-/**
- * Send the user a new account verification email.
- * @param apiPath PingOne for Customers authorization and authentication endpoint
- */
-const sendVerificationCode = (apiPath) => {
-  return pingPost(apiPath, 'user.sendVerificationCode+json');
-};
-
-/**
- * Verify the user account to continue the authentication flow.
- * The user must click the link in the verification email to verify the account. The request body requires the verificationCode attribute identifying the verification code to check.
- * @param apiPath PingOne for Customers authorization and authentication endpoint
- * @param verificationCode
- */
-const verifyUser = (apiPath, verificationCode) => {
-  return pingPost(apiPath, 'user.verify+json', {verificationCode});
-};
-
-/**
- * Register a new user.
- * @param apiPath PingOne for Customers authorization and authentication endpoint
- * @param username user name
- * @param email
- * @param password
- */
-const registerUser = (apiPath, username, email, password) => {
-  return pingPost(apiPath, 'user.register+json', {username, email, password});
-};
-
-/******************************************************************************
- *         OpenID Connect Protocol API
- ******************************************************************************/
 
 /**
  * Ends the user session associated with the given ID token.
@@ -176,10 +68,6 @@ const getUserInfo = (environmentId, token) => {
       {'Authorization': `Bearer ${token}`})
 };
 
-/******************************************************************************
- *         OAuth 2 Protocol API
- ******************************************************************************/
-
 /**
  * Obtain an access token in a format of:
  * {access_token: "bla", token_type: "Bearer", expires_in: 3600, scope: "address phone openid profile email", id_token: "bla"}
@@ -194,7 +82,7 @@ const getUserInfo = (environmentId, token) => {
  * @param code a string that specifies the authorization code returned by the authorization server. This property is required only if the grant_type is set to authorization_code
  */
 const getAccessToken = (environmentId, clientId, clientSecret = null,
-    redirectUri, grant_type = 'implicit', tokenEndpointAuthMethod = 'client_secret_post', code) => {
+    redirectUri, grant_type = 'authorization_code', tokenEndpointAuthMethod = 'client_secret_post', code) => {
   if(_.isEqual(tokenEndpointAuthMethod, 'client_secret_post')){
     return post(`${getBaseApiUrl(
         true)}/${environmentId}/as/token`,
@@ -225,9 +113,6 @@ const post = (apiPath, contentType, body = {}) =>
           }
         }));
 
-const pingPost = (apiPath, contentType, body = {}) =>
-    post(apiPath, `application/vnd.pingidentity.${contentType}`, body);
-
 const get = (apiPath, getBody = false, headers = {}) =>
     new Promise((resolved, rejected) =>
         request
@@ -243,55 +128,31 @@ const get = (apiPath, getBody = false, headers = {}) =>
 
 const getBaseApiUrl = (useAuthUrl) => {
   return useAuthUrl ?
-      config.AUTH : // base API URL for auth things like the flow orchestration service
-      config.API; // base API URL for non-auth things
+      config.AUTH_URI : // base API URL for auth things like the flow orchestration service
+      config.API_URI; // base API URL for non-auth things
 };
 
-const decomposeUrl = (url) => {
-  if (!url) {
-    return {};
-  }
 
-  const a = document.createElement('a');
-  a.href = url;
-
-  return {
-    host: a.host,
-    pathname: a.pathname,
-    search: a.search,
-    queryParams: parseQueryParams(a.search),
-    hash: a.hash,
-  };
+const parseHash = () => {
+  return window.location.hash.replace('#', '').split('&').reduce((prev, item) => {
+    return Object.assign({[item.split('=')[0]]: decodeURIComponent(item.split('=')[1])}, prev);
+  }, {});
 };
 
-const parseQueryParams = (searchStr) => {
-  const str = searchStr.replace(/^\?/, '');
-  const params = str.split('&');
-
-  const returnVal = {};
-
-  _.forEach(params, (param) => {
-    const paramSplit = param.split('=');
-    returnVal[paramSplit[0]] = paramSplit[1];
-  });
-
-  return returnVal;
+const generateRandomValue = () => {
+  let crypto = window.crypto || window.msCrypto;
+  let D = new Uint32Array(2);
+  crypto.getRandomValues(D);
+  return D[0].toString(36);
 };
+
 
 export default {
+  authorize,
   signOff,
   getAccessToken,
   getUserInfo,
 
-  authorize,
-  signOn,
-  resetFlow,
-  changeUserPassword,
-  forgotPassword,
-  sendRecoveryCode,
-  recoverUserPassword,
-
-  registerUser,
-  sendVerificationCode,
-  verifyUser
+  parseHash,
+  generateRandomValue
 }

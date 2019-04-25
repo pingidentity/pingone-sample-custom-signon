@@ -2,8 +2,6 @@ import _ from 'lodash';
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Flow, STATUS} from "../sdk";
-import {Redirect} from "react-router";
-import {PATH} from "./auth";
 
 class VerificationCode extends React.Component {
   constructor(props) {
@@ -13,8 +11,7 @@ class VerificationCode extends React.Component {
       verificationCode: '',
       isVerifying: false,
       errorMessage: '',
-      isResending: false,
-      redirect: null
+      isResending: false
     };
 
     this.handleResendEmail = this.handleResendEmail.bind(this);
@@ -76,14 +73,6 @@ class VerificationCode extends React.Component {
       });
   }
 
-  handleCancel(event) {
-    event.preventDefault();
-    this.setState({
-      redirect: (<Redirect to={PATH.FORGOT_PASSWORD_USERNAME} />),
-      isVerifying: false,
-    });
-  }
-
   handleResendEmail() {
     const { flow, authActions } = this.props;
 
@@ -111,7 +100,7 @@ class VerificationCode extends React.Component {
   }
 
   render() {
-    const { verificationCode, isVerifying, errorMessage, isResending, redirect  } = this.state;
+    const { verificationCode, isVerifying, errorMessage, isResending  } = this.state;
     const { message } = this.props;
 
     const isReady = !!verificationCode;
@@ -130,7 +119,6 @@ class VerificationCode extends React.Component {
         </div> :
       (
         <div>
-          {redirect}
           <h1 className="heading" data-id="verification-heading">Thank You!</h1>
           {alert}
           <div className="input-field">
@@ -160,14 +148,6 @@ class VerificationCode extends React.Component {
                       type="submit"
                       disabled={!isReady}>
                     Verify
-                  </button>
-                </div>
-                <div className="input-field">
-                  <button
-                      className="button"
-                      data-id="cancel-btn"
-                      onClick={this.handleCancel}>
-                    Cancel
                   </button>
                 </div>
               </form>

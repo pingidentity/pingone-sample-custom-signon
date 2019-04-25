@@ -225,16 +225,39 @@ export const generateRequirementsTooltip = (clientValidatedRequirements, flow) =
           );
         });
 
-export const parseHash = () => {
-  return window.location.hash.replace('#', '').split('&').reduce((prev, item) => {
-    return Object.assign({[item.split('=')[0]]: decodeURIComponent(item.split('=')[1])}, prev);
-  }, {});
+export const getURLParameter = (paramName) => {
+  const urlParts = decomposeUrl(window.location.href);
+  return urlParts.queryParams[paramName];
 };
 
-export const generateRandomValue = () => {
-  let crypto = window.crypto || window.msCrypto;
-  let D = new Uint32Array(2);
-  crypto.getRandomValues(D);
-  return D[0].toString(36);
+
+const decomposeUrl = (url) => {
+  if (!url) {
+    return {};
+  }
+
+  const a = document.createElement('a');
+  a.href = url;
+
+  return {
+    host: a.host,
+    pathname: a.pathname,
+    search: a.search,
+    queryParams: parseQueryParams(a.search),
+    hash: a.hash,
+  };
 };
 
+const parseQueryParams = (searchStr) => {
+  const str = searchStr.replace(/^\?/, '');
+  const params = str.split('&');
+
+  const returnVal = {};
+
+  _.forEach(params, (param) => {
+    const paramSplit = param.split('=');
+    returnVal[paramSplit[0]] = paramSplit[1];
+  });
+
+  return returnVal;
+};

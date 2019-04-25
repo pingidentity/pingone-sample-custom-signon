@@ -1,15 +1,14 @@
 import React from 'react';
 import {render} from 'react-dom';
 import {Provider} from 'react-redux';
-import {BrowserRouter, Route, Switch} from 'react-router-dom';
 import './index.css';
-import config from "./config";
-import Auth from './containers/container';
+import config from './config';
+import Container from './containers/container';
 import {applyMiddleware, combineReducers, compose, createStore} from 'redux';
 import thunk from 'redux-thunk';
 import freeze from 'redux-freeze';
 import reducer from './reducers/index';
-import Callback from "./components/callback";
+import {MemoryRouter} from "react-router";
 
 const devToolsExtension = window.__REDUX_DEVTOOLS_EXTENSION__
     ? window.__REDUX_DEVTOOLS_EXTENSION__() : (f) => f;
@@ -19,14 +18,9 @@ const store = composeStore(combineReducers(reducer));
 
 render(
     <Provider store={store}>
-      <BrowserRouter>
-        <Switch>
-          <Route exact path='/callback' render={(routeProps) =>
-              <Callback {...routeProps} {...config}/>}/>
-          <Route render={(routeProps) =>
-              <Auth {...routeProps}{...config}/>}/>
-        </Switch>
-      </BrowserRouter>
+      <MemoryRouter>
+        <Container {...config} />
+      </MemoryRouter>
     </Provider>,
     document.getElementById('root')
 );

@@ -40,6 +40,10 @@ export class Flow {
     return _.isEqual(this.status, STATUS.COMPLETED);
   }
 
+  isFailed() {
+    return _.isEqual(this.status, STATUS.FAILED);
+  }
+
   isRecoveryCodeRequired() {
     return _.isEqual(this.status, STATUS.RECOVERY_CODE_REQUIRED);
   }

@@ -22,18 +22,17 @@ const updateFlow = (dispatch) => (result = null, isAuthenticated = false, messag
   return dispatch(updateFlowAction(result ? new Flow(result): result, isAuthenticated, message));
 };
 
-const resetFlow = (dispatch) => (apiPath) => {
-  return api.resetFlow(apiPath)
+const getFlow = (dispatch) => (environmentId, flowId) => {
+  return api.getFlow(environmentId, flowId)
   .then((flow) => {
     dispatch(updateFlowAction(new Flow(flow)));
     return Promise.resolve(flow);
   })
 };
 
-const authorize = (dispatch) => (environmentId, responseType, clientId,
-    redirectUri, scope, state, nonce, prompt, maxAge, tokenEndpointAuthMethod) => {
-  return api.authorize(environmentId, responseType, clientId, redirectUri, scope, state, nonce, prompt, maxAge, tokenEndpointAuthMethod)
-  .then(flow => {
+const resetFlow = (dispatch) => (apiPath) => {
+  return api.resetFlow(apiPath)
+  .then((flow) => {
     dispatch(updateFlowAction(new Flow(flow)));
     return Promise.resolve(flow);
   })
@@ -94,7 +93,7 @@ const sendVerificationCode = (dispatch) => (apiPath) => {
 const verifyUser = (dispatch) => (apiPath, verificationCode) => {
   return api.verifyUser(apiPath, verificationCode)
   .then(flow => {
-    dispatch(updateFlowAction(new Flow(flow), false, 'You successfully registered, '+ _.get(flow, '_embedded.user.username', '')));
+    dispatch(updateFlowAction(new Flow(flow), false, 'Congratulations, '+ _.get(flow, '_embedded.user.username') + '! You’ve created a Ping Sample Application account'));
     return Promise.resolve(flow);
   })
 };
@@ -112,8 +111,6 @@ export default {
 
   bind: (dispatch) => ({
     signOn: signOn(dispatch),
-    authorize: authorize(dispatch),
-
     changeUserPassword: changeUserPassword(dispatch),
     forgotPassword: forgotPassword(dispatch),
     sendRecoveryCode: sendRecoveryCode(dispatch),
@@ -122,6 +119,7 @@ export default {
     verifyUser: verifyUser(dispatch),
     registerUser: registerUser(dispatch),
 
+    getFlow: getFlow(dispatch),
     updateFlow: updateFlow(dispatch),
     resetFlow: resetFlow(dispatch)
   })
