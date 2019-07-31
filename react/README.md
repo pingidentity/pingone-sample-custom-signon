@@ -1,10 +1,19 @@
 # Introduction
 
-This sample demonstrates how to initiate login actions that specify the operations required to authorize with a username and password. It uses PingOne flow orchestration service to authorize the application or user that initiated the authentication request. 
+This sample demonstrates how to initiate login actions that specify the operations required to authorize with a username and password. 
+It uses PingOne flow orchestration service to authorize the application or user that initiated the authentication request. 
 This service is responsible for initiating the authentication session and making calls to specific actions required by the authentication workflow.
 
 Flow endpoint operations are used only to implement custom authentication UIs. 
 OIDC/OAuth 2 requests initiate the flow and redirect the browser to the custom authentication UI (which is configured in the application through the application’s `loginPageUrl` property.)
+
+To summarize, this sample code contains an example of:
+- new user registration
+- user login
+- user login with external social login providers
+- forget password flow
+- update password
+
 
 ## Application Type
 PingOne supports several application types, but for this sample better to choose **Single page** (runs on the client side after it loads, so it can't keep a client secret) or **[Native](https://tools.ietf.org/html/rfc8252)** ( typically intended for mobile devices) application type with : auth code,  implicit or refresh token grant types.
@@ -49,6 +58,19 @@ The following table shows the relationships between the application type attribu
 | Native	| authorization_code, implicit	| token, id_token, code	| none| 
 | Web	| authorization_code	| code	| client_secret_basic| 
 | Single-page	| implicit	| token, id_token	| none| 
+
+## External Identity Providers 
+
+An identity provider configuration allows linked users to authenticate and gain access to PingOne resources using the login flow and credentials provided by the external identity provider.
+For now PingOne supports Facebook and SAML as external identity providers.
+
+### Social Login Configuration
+
+The PingOne identity provider resource representing an external provider includes mapping attributes that reference the user attribute (or attributes) from the external identity provider that are mapped to PingOne user attributes.
+To add Facebook as the the external identity provider, please follow this steps:
+- create a new connection under ***Identity Providers**  part n PingOne admin console (check [Identity providers](https://apidocs.pingidentity.com/pingone/customer/v1/api/man/p1_IdentityProvider/) for more information)
+- in PingOne admin console, select your Sign-on policy, click edit and under **Enabled Identity Providers** select the previously added connection
+- make sure that external identity provider will accept PingOne domain redirect url. For the Facebook Login, please set under **Client OAuth Settings** URL with a following pattern: `https://auth.pingone.com/<YOUR_ENVIRONMENT_ID>/rp/callback/facebook` under **Valid OAuth Redirect URIs** 
 
 # Getting Started
 

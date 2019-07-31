@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import {Flow, STATUS} from "../sdk";
 import {PATH} from './auth';
 import _ from "lodash";
+import SocialProviders from "./socialProviders";
 
 class UserLogin extends React.Component {
   constructor(props) {
@@ -194,6 +195,8 @@ class UserLogin extends React.Component {
             </div>
       );
 
+      const socialProviders = flow.getSocialProviders();
+
       return (
           <div>
             {redirect}
@@ -249,6 +252,7 @@ class UserLogin extends React.Component {
                   </button>
                 </div>
               </form>
+              <SocialProviders socialProviders={socialProviders} />
               {forgotPasswordAnchor}
               {registerUserAnchor}
               {passwordResetAnchor}
