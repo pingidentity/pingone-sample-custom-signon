@@ -1,8 +1,9 @@
 import React from 'react';
-import api from '../sdk/api'
-import UserInfo from './userInfo'
+import authClient from '../sdk/api'
 import PropTypes from 'prop-types';
 import _ from "lodash";
+import InfoTable from "./infoTable";
+import config from "../config";
 
 /**
  * React component for managing the return entry point of the implicit OAuth 2.0 flow and is expecting "access_token", "id_token" or "code" in a redirect uri.
@@ -12,116 +13,159 @@ class Home extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      access_token: null,
+      id_token: null,
+      idTokenJson: null,
       userInfo: null,
       errorMessage: ''
-    };
+    }
 
     this.handleSignIn = this.handleSignIn.bind(this);
     this.handleSignOff = this.handleSignOff.bind(this);
   }
 
   handleSignIn() {
-    const {authDetails} = this.props;
     this.clearSession();
-
-    let state = api.generateRandomValue();
-    let nonce = api.generateRandomValue();
+    let state = authClient.generateRandomValue();
+    let nonce = authClient.generateRandomValue();
+    // Store state and nonce parameters into the session, so we can retrieve them after
+    // user will be redirected back with access token or code (since react state is cleared in this case)
     sessionStorage.setItem("state", state);
+    sessionStorage.setItem("nonce", nonce);
 
-    api.authorize(authDetails.environmentId,
-        authDetails.responseType, authDetails.clientId,
-        authDetails.redirectUri, authDetails.scope,
-        state, nonce,
-        authDetails.prompt, authDetails.maxAge);
-
+    authClient.authorize(state, nonce);
   }
 
   handleSignOff() {
-    if (sessionStorage.getItem("id_token")) {
-      api.signOff(this.props.authDetails.environmentId,
-          this.props.authDetails.logoutRedirectUri,
-          sessionStorage.getItem("id_token"), sessionStorage.getItem("state"));
+    if (this.state.id_token) {
+      authClient.signOff(this.state.id_token, sessionStorage.getItem("state"));
     }
-
     this.clearSession();
   }
 
   clearSession() {
-    sessionStorage.removeItem("access_token");
-    sessionStorage.removeItem("id_token");
-    sessionStorage.removeItem("code");
-    sessionStorage.removeItem("expires_in");
-    sessionStorage.removeItem("scope");
-    sessionStorage.removeItem("state");
+    this.setState({
+      access_token: null,
+      id_token: null,
+      errorMessage: ''
+    });
   }
 
   componentDidMount() {
-    const {authDetails} = this.props;
-
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-    if (!uuidRegex.test(authDetails.environmentId)) {
-      this.setState({
-        errorMessage: `Invalid environmentId parameter ${authDetails.environmentId} : it should be a valid UUID.  Please check it in your config.js parameters file.`,
-      });
-    }
-
-    let hashes = api.parseHash();
-
-    if (hashes && hashes.error && hashes.error_description) {
+    const hashes = authClient.parseHash();
+    if (hashes.error && hashes.error_description) {
       this.setState({
         errorMessage: hashes.error + ': ' + hashes.error_description,
       });
       return;
     }
 
-    let stateMatch = window.location.href.match('[?#&]state=([^&]*)');
+    const stateMatch = window.location.href.match('[?#&]state=([^&]*)');
     if (stateMatch && !stateMatch[1] &&
         !_.isEqual(stateMatch[1], sessionStorage.getItem("state"))) {
       this.setState({
-        errorMessage: "State parameter mismatch"
+        errorMessage: "State parameter mismatch. "
       });
+      this.clearSession();
       return;
     }
 
-    let codeMatch = window.location.href.match('[?#&]code=([^&]*)');
+    const codeMatch = window.location.href.match('[?#&]code=([^&]*)');
+    // Implicit flow: access token is present in URL
+    if (hashes.access_token) {
+      this.setState({
+        access_token: hashes.access_token
+      })
+      this.handleUserInfo(hashes.access_token);
+    }
+    // Authorization code flow: access code is present in URL
+    else if (codeMatch && codeMatch[1]) {
+      authClient.getAccessToken(codeMatch[1])
+      .then(token => {
+        this.setState({
+          access_token: token.access_token,
+          id_token: token.id_token
+        });
+        this.handleUserInfo(token.access_token);
+        this.verifyToken(token.id_token);
+      })
+      .catch(error => {
+        this.setState({
+          errorMessage: "Couldn't get an access token. " + _.get(error,
+              'error_description', _.get(error, 'message', ''))
+        })
+      });
+    }
 
-    if (hashes && hashes.access_token && hashes.id_token && hashes.expires_in) {
-      sessionStorage.setItem("access_token", hashes.access_token);
-      sessionStorage.setItem("id_token", hashes.id_token);
-      sessionStorage.setItem("expires_in", hashes.expires_in);
-      sessionStorage.setItem("scope", hashes.scope);
-    } else if (codeMatch && codeMatch[1]) {
-      sessionStorage.setItem("code", codeMatch[1]);
+    if (hashes.id_token) {
+      this.verifyToken(hashes.id_token);
     }
     // Replace current URL without adding it to history entries
     window.history.replaceState({}, '', '/');
   }
 
-  render() {
-    const {errorMessage} = this.state;
+  verifyToken(id_token) {
+    authClient.verifyIdToken(id_token,
+        {
+          nonce: sessionStorage.getItem("nonce"),
+          maxAge: config.maxAge
+        })
+    .then(idToken => {
+      this.setState({
+        idTokenJson: idToken
+      })
+    })
+    .catch(error => {
+      this.setState({
+        errorMessage: "Id token verification failed. " + _.get(error,
+            'error_description', _.get(error, 'message', error))
+      })
+    })
+  }
 
-    let alert = errorMessage && (
+  handleUserInfo(access_token) {
+    authClient.getUserInfo(access_token)
+    .then(result => {
+      this.setState({
+        userInfo: result
+      })
+    })
+    .catch(error => {
+      const errorDetail = _.get(error, 'details[0].code', null);
+      if (_.isEqual(errorDetail, 'INVALID_VALUE')) {
+        if (_.get(error, 'details[0].message', null).includes(
+            "Access token expired")) {
+          this.setState({
+            errorMessage: 'Your access token is expired. Please login again.'
+          });
+        } else {
+          this.setState({
+            errorMessage: _.get(error, 'details[0].message', null)
+          });
+        }
+      } else if (errorDetail) {
+        this.setState({
+          errorMessage: errorDetail + _.get(error, 'details[0].message', null)
+        });
+      } else if (_.get(error, 'error', null) || _.get(error,
+          'error_description', null)) {
+        this.setState({
+          errorMessage: _.get(error, 'error', null) + ': ' + _.get(error,
+              'error_description', null)
+        });
+      }
+      return Promise.reject(error);
+    })
+  }
+
+  render() {
+    const {errorMessage, access_token, idTokenJson, userInfo} = this.state;
+    const alert = errorMessage && (
         <div className="alert alert-danger">{errorMessage}</div>
     );
 
-    const isNotAuthenticated = !(sessionStorage.getItem("access_token")
-        && sessionStorage.getItem(
-            "id_token")) && !/access_token|id_token/.test(window.location.hash)
-        && !sessionStorage.getItem("code") && !/code/.test(
-            window.location.href);
-
-    const content = isNotAuthenticated ?
+    const content = access_token ?
         (
-            <div id="signInView">
-              <p>You are not currently authenticated. Click Sign On to get
-                started.</p>
-              <div className="input-field">
-                <button type="button" onClick={this.handleSignIn}>Sign On
-                </button>
-              </div>
-            </div>
-        ) : (
             <div className="home-app">
               <em>
                 Congratulations! This is a secure resource.
@@ -131,7 +175,19 @@ class Home extends React.Component {
                 <button type="button" onClick={this.handleSignOff}> Sign Off
                 </button>
               </div>
-              <UserInfo authDetails={this.props.authDetails}/>
+              <InfoTable btnLabel={'User Information'} data={userInfo}/>
+              <InfoTable btnLabel={'User Id Token Information'}
+                         data={idTokenJson}/>
+            </div>
+        ) :
+        (
+            <div id="signInView">
+              <p>You are not currently authenticated. Click Sign On to get
+                started.</p>
+              <div className="input-field">
+                <button type="button" onClick={this.handleSignIn}>Sign On
+                </button>
+              </div>
             </div>
         );
 
@@ -146,19 +202,17 @@ class Home extends React.Component {
 }
 
 Home.propTypes = {
-  authDetails: PropTypes.shape({
-    environmentId: PropTypes.string.isRequired,
-    clientId: PropTypes.string.isRequired,
-    clientSecret: PropTypes.string,
-    scope: PropTypes.string.isRequired,
-    responseType: PropTypes.string,
-    tokenEndpointAuthMethod: PropTypes.string.isRequired,
-    grantType: PropTypes.string,
-    prompt: PropTypes.string,
-    redirectUri: PropTypes.string,
-    logoutRedirectUri: PropTypes.string,
-    maxAge: PropTypes.number
-  }).isRequired
+  environmentId: PropTypes.string.isRequired,
+  clientId: PropTypes.string.isRequired,
+  clientSecret: PropTypes.string,
+  scope: PropTypes.string.isRequired,
+  responseType: PropTypes.string,
+  tokenEndpointAuthMethod: PropTypes.string.isRequired,
+  grantType: PropTypes.string,
+  prompt: PropTypes.string,
+  redirectUri: PropTypes.string,
+  logoutRedirectUri: PropTypes.string,
+  maxAge: PropTypes.number
 };
 
 export default Home;

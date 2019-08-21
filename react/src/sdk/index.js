@@ -60,6 +60,10 @@ export class Flow {
     return this.embedded.user;
   }
 
+  getSocialProviders() {
+    return _.get(this, 'embedded.socialProviders', []);
+  }
+
   getPasswordPolicyMessage(policy) {
     const { passwordPolicy } = this.embedded;
 
