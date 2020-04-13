@@ -25,9 +25,8 @@ export default {
   // Specifies the maximum amount of time allowed since the user last authenticated. If the max_age value is exceeded, the user must re-authenticate.
   maxAge: 3600,
   // Optional parameter that designates whether the authentication request includes steps for a single-factor or multi-factor authentication flow. This parameter maps to the name of a sign-on policy that must be assigned to the application. For more information, see Sign-on policies.
-  //acr_values: "Single_Factor"
+  //acrValues: "Single_Factor"
 
   API_URI: 'https://api.pingone.com/v1',
   AUTH_URI: 'https://auth.pingone.com'
 };
-
