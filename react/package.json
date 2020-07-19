@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "big-integer": "^1.6.42",
-    "lodash": "^4.17.14",
+    "lodash": "^4.17.19",
     "prop-types": "^15.7.2",
     "react": "^16.8.3",
     "react-dom": "^16.8.3",
