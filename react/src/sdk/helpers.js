@@ -9,7 +9,7 @@ export const RequiredProperties = {
   MIN_CHARACTERS: 'minCharacters',
   MIN_LOWERCASE: 'abcdefghijklmnopqrstuvwxyz',
   MIN_UPPERCASE: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-  MIN_NUMERIC: '1234567890',
+  MIN_NUMERIC: '0123456789',
   MIN_SPECIAL: '~!@#$%^&*()-_=+[]{}|;:,.<>/?',
   MIN_COMPLEXITY: 'minComplexity',
 };
