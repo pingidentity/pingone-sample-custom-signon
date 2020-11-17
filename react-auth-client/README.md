@@ -5,7 +5,7 @@ It handles OAuth 2.0 implicit flow by default, where the access token is returne
 But you can check the other flows here as well. In particular, the authorization grants like `authorization_code` or `client_credentials`, where your application will call the `/{environmentId}/as/token` endpoint to acquire the access token.
 
 It has a simple component that generates the necessary link to send your users to the correct location, and perform the authorization process once the user is back on the application.
-If successful, the __"Show user information"__ link will be present on the page that will trigger to retrieve the OAuth 2.0 protected resource (from [UserInfo Endpoint](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Authorize/#UserInfo-endpoint)) about the authenticated end user.
+If successful, the __"Show user information"__ link will be present on the page that will trigger to retrieve the OAuth 2.0 protected resource (from [UserInfo Endpoint](https://apidocs.pingidentity.com/pingone/platform/v1/api/#get-userinfo)) about the authenticated end user.
 
 # Content
 - [Prerequisites](#prerequisites)
@@ -16,15 +16,15 @@ If successful, the __"Show user information"__ link will be present on the page 
 # Prerequisites 
 You will need the following things:
 
-- PingOne for Customers Account - If you don’t have an existing one, you can drop the it after register.
+- PingOne Account - If you don’t have an existing one, you can drop register for a trial at https://www.pingidentity.com/en/trials.html
 - A [PingOne application](https://documentation.pingidentity.com/pingone/p14cAdminGuide/index.shtml#p1_t_addApplication.html), configured for Single-Page App (SPA) or Native mode. Also make sure that it is enabled plus redirect, sign off URL's and access grants by scopes are properly set.
-- Specify custom login page URL for the application in __SIGNON URL__ textbox of P14C admin console. 
+- Specify custom login page URL for the application in __SIGNON URL__ textbox of PingOne admin console. 
 
 # Getting Started
 
 1. Clone source code
-`git clone git@github.com:pingidentity/pingone-customers-sample-custom-signon.git . `
-2. Update [config.js](./src/config.js) with your application's data extracted from P14C admin console:
+`git clone git@github.com:pingidentity/pingone-sample-custom-signon.git . `
+2. Update [config.js](./src/config.js) with your application's data extracted from PingOne admin console:
     - `environment_id`: *Required*. Your application's Environment ID. You can find this value at your Application's Settings under 
     **Configuration** tab from the admin console( extract `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` string that specifies the environment 128-bit universally unique identifier ([UUID](https://tools.ietf.org/html/rfc4122)) right from `https://auth.pingone
     .com/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/as/authorize` 
@@ -56,13 +56,13 @@ The following table shows the relationships between the application type attribu
 | Single-page	| implicit	| token, id_token	| none| 
 
 
-## PingOne for Customers API used in this sample
+## PingOne APIs used in this sample
 ### Authentication API:
 |    Endpoint   |    Description   |
 | ------------- |------------- |
-| [`POST /{environmentId}/as/authorize`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Authorize/#Authorization-request-with-a-code-grant) <br>  `prompt=login` parameter is used by default  | Authorization request with a code or implicit grant type.|
-| [`POST /{environmentId}/as/token`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Authorize/#Obtain-an-access-token)  | Obtain an access token in authorization grant case|
-| [`GET /{environmentID}/as/signoff?id_token_hint={idToken}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Authorize/#Get-signoff) <br> if `post_logout_redirect_uri` parameter is provided and it does not match one of the `postLogoutRedirectUri` values of your application in the specified environment - it would be handled as an unpredictable error.  | Obtain an access token in authorization grant case|
+| [`POST /{environmentId}/as/authorize`](https://apidocs.pingidentity.com/pingone/platform/v1/api/#get-authorize-authorization_code) <br>  `prompt=login` parameter is used by default  | Authorization request with a code or implicit grant type.|
+| [`POST /{environmentId}/as/token`](https://apidocs.pingidentity.com/pingone/platform/v1/api/#post-token-authorization_code)  | Obtain an access token in authorization grant case|
+| [`GET /{environmentID}/as/signoff?id_token_hint={idToken}`](https://apidocs.pingidentity.com/pingone/platform/v1/api/#get-signoff) <br> if `post_logout_redirect_uri` parameter is provided and it does not match one of the `postLogoutRedirectUri` values of your application in the specified environment - it would be handled as an unpredictable error.  | Obtain an access token in authorization grant case|
 
 **Note:** For any application type (except non-interactive), you can specify either `none`, `client_secret_basic`, or `client_secret_post` as the `tokenEndpointAuthMethod` attribute value. Non-interactive applications use the `client_credentials` grant type, which does not support a `tokenEndpointAuthMethod` value of none.
 
@@ -71,7 +71,7 @@ The following table shows the relationships between the application type attribu
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 This means you don’t need to install or configure tools like Webpack or Babel, since they are preconfigured and hidden so that you can focus on the code.
 
-1. In case you want to experience more OIDC and other [PingOne for Customers Management APIs](https://apidocs.pingidentity.com/pingone/customer/v1/api/man/) without enforcing CORS, you can open another instance of chrome with disabled security (without closing other running chrome instances):
+1. In case you want to experience more OIDC and other [PingOne Management APIs](https://apidocs.pingidentity.com/pingone/platform/v1/api/#management-apis) without enforcing CORS, you can open another instance of chrome with disabled security (without closing other running chrome instances):
 on Mac terminal:
 ```bash
 open -n -a "Google Chrome" --args --user-data-dir=/tmp/temp_chrome_user_data_dir http://localhost:3000/ --disable-web-security
