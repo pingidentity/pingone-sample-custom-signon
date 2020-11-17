@@ -20,7 +20,7 @@ PingOne supports several application types, but for this sample better to choose
 
 The application type determines the authorization flow steps needed to acquire an access token from the authorization service. 
 
-The following examples describe `authorization_code` and `implicit` [authorization flows](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_AuthActivities/p1-a_appAuth/) for the designated application type.
+The following examples describe `authorization_code` and `implicit` [authorization flows](https://apidocs.pingidentity.com/pingone/platform/v1/api/#configure-an-application-with-an-authorization-code-grant) for the designated application type.
 
 
 __Authorization code grant type__
@@ -68,32 +68,32 @@ For now PingOne supports Facebook and SAML as external identity providers.
 
 The PingOne identity provider resource representing an external provider includes mapping attributes that reference the user attribute (or attributes) from the external identity provider that are mapped to PingOne user attributes.
 To add Facebook as the the external identity provider, please follow this steps:
-- create a new connection under ***Identity Providers**  part n PingOne admin console (check [Identity providers](https://apidocs.pingidentity.com/pingone/customer/v1/api/man/p1_IdentityProvider/) for more information)
+- create a new connection under ***Identity Providers**  in the PingOne admin console (check [Identity providers](https://apidocs.pingidentity.com/pingone/platform/v1/api/#identity-providers) for more information)
 - in PingOne admin console, select your Sign-on policy, click edit and under **Enabled Identity Providers** select the previously added connection
 - make sure that external identity provider will accept PingOne domain redirect url. For the Facebook Login, please set under **Client OAuth Settings** URL with a following pattern: `https://auth.pingone.com/<YOUR_ENVIRONMENT_ID>/rp/callback/facebook` under **Valid OAuth Redirect URIs** 
 
 # Getting Started
 
 1. Clone a source code
-`git clone git@github.com:pingidentity/pingone-customers-sample-custom-signon.git . `
-2. To change PingOne for Customers API public endpoints, application logo or [custom environment variables](https://facebook.github.io/create-react-app/docs/adding-custom-environment-variables)(i.e `REACT_APP_STAGE`), please navigate to [config.js](./src/config.js) file.
+`git clone git@github.com:pingidentity/pingone-sample-custom-signon.git . `
+2. To change PingOne API public endpoints, application logo or [custom environment variables](https://facebook.github.io/create-react-app/docs/adding-custom-environment-variables)(i.e `REACT_APP_STAGE`), please navigate to [config.js](./src/config.js) file.
 3. Build a project by `npm install` or `yarn install`
 4. Start an application by `npm start` or `yarn start`
 
 
-## PingOne for Customers API used in this sample
+## PingOne APIs used in this sample
 ### Flow API:
 |    Endpoint   |    Description   |
 | ------------- |------------- |
-| [`GET /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Get-a-flow) <br> `Content-Type: application/json` | Retrieve information about a flow |
-| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Reset-a-flow) <br> `Content-Type: application/vnd.pingidentity.session.reset+json`  | Update (or reset) a flow orchestration session |
-| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Register-a-user) <br> `Content-Type: application/vnd.pingidentity.user.register+json`  | Register a user |
-| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Login-with-username-and-password) <br> `Content-Type: application/vnd.pingidentity.usernamePassword.check+json`  | Login with username and password|
-| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Reset-password) <br> `Content-Type: application/vnd.pingidentity.password.reset+json`  | Change (or reset) the user’s password |
-| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Recover-password) <br> `Content-Type: application/vnd.pingidentity.password.recover+json`  | Recover the account and set a new password |
-| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Send-recovery-code) <br> `Content-Type: application/vnd.pingidentity.password.sendRecoveryCode`  | Send the OTP to the user |
-| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Verify-user) <br> `Content-Type: application/vnd.pingidentity.user.verify+json`  | Verify the user account to continue the authentication flow |
-| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/customer/v1/api/auth/p1-a_Flows/#Send-verification-email) <br> `Content-Type: application/vnd.pingidentity.user.sendVerificationCode+json`  | Send the user a new account verification email |
+| [`GET /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/platform/v1/api/#get-read-flow) <br> `Content-Type: application/json` | Retrieve information about a flow |
+| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/platform/v1/api/#post-reset-flow) <br> `Content-Type: application/vnd.pingidentity.session.reset+json`  | Update (or reset) a flow orchestration session |
+| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/platform/v1/api/#post-register-user) <br> `Content-Type: application/vnd.pingidentity.user.register+json`  | Register a user |
+| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/platform/v1/api/#post-check-usernamepassword) <br> `Content-Type: application/vnd.pingidentity.usernamePassword.check+json`  | Login with username and password|
+| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/platform/v1/api/#post-reset-password) <br> `Content-Type: application/vnd.pingidentity.password.reset+json`  | Change (or reset) the user’s password |
+| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/platform/v1/api/#post-recover-password) <br> `Content-Type: application/vnd.pingidentity.password.recover+json`  | Recover the account and set a new password |
+| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/platform/v1/api/#post-send-resend-recovery-code) <br> `Content-Type: application/vnd.pingidentity.password.sendRecoveryCode`  | Send the OTP to the user |
+| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/platform/v1/api/#post-verify-user) <br> `Content-Type: application/vnd.pingidentity.user.verify+json`  | Verify the user account to continue the authentication flow |
+| [`POST /{environmentId}/flows/{flowID}`](https://apidocs.pingidentity.com/pingone/platform/v1/api/#post-send-resend-verification-code) <br> `Content-Type: application/vnd.pingidentity.user.sendVerificationCode+json`  | Send the user a new account verification email |
 
 
 **Note:** For any application type (except non-interactive), you can specify either `none`, `client_secret_basic`, or `client_secret_post` as the `tokenEndpointAuthMethod` attribute value. Non-interactive applications use the `client_credentials` grant type, which does not support a `tokenEndpointAuthMethod` value of none.
@@ -103,7 +103,7 @@ To add Facebook as the the external identity provider, please follow this steps:
 This sample includes scripts and configuration used by [Create React App](https://github.com/facebook/create-react-app). So you don’t need to install or configure tools like Webpack or Babel.
 They are preconfigured and hidden so that you can focus on the code.
 
-1. In case you want to experience more OIDC and other [PingOne for Customers Management APIs](https://apidocs.pingidentity.com/pingone/customer/v1/api/man/) without enforcing CORS, you can open another instance of chrome with disabled security (without closing other running chrome instances):
+1. In case you want to experience more OIDC and other [PingOne Management APIs](https://apidocs.pingidentity.com/pingone/platform/v1/api/#management-apis) without enforcing CORS, you can open another instance of chrome with disabled security (without closing other running chrome instances):
 on Mac terminal:
 ```bash
 open -n -a "Google Chrome" --args --user-data-dir=/tmp/temp_chrome_user_data_dir http://localhost:3000/ --disable-web-security
