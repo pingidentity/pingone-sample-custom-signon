@@ -31,7 +31,9 @@ You will need the following things:
     *AUTHORIZATION URL* ). Or from the *Settings* main menu (*ENVIRONMENT ID* variable)
     - `client_id`: *Required*. Your application's client UUID. You can also find this value at Application's Settings right under the 
     Application name.
-    - `clientSecret`: A string that specifies the the application’s client secret. This property is required if your application **is not a public client**. Plus make sure to set it if the following  the application’s `tokenEndpointAuthMethod` property is set to `CLIENT_SECRET_POST`.
+    - `clientSecret`: A string that specifies the the application’s client secret. This property is required if your application **is not a public client**. Plus make sure to set it if the following  the application’s `tokenEndpointAuthMethod` property is set to `CLIENT_SECRET_POST`. 
+    
+        **WARNING:** This configuration could be used only for testing purposes. **Do not use `clientSecret` in production** since your application should not be a public client and do not reveal its secret anywhere.
     - `responseType`: A string that specifies the code or token type returned by an authorization request. Options are `token`, `id_token`, and `code`. The value **MUST** be the `code` for requesting an authorization code flow (`grantType=authorization_code`), `id_token token` for the implicit flow(`grantType=implicit`), or `code id_token` for hybrid flow (a scenario when you can have a long lived session in your application and get tokens back immediately from the authorization endpoint).
     For more variants please check [Definitions of Multiple-Valued Response Type Combinations](https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html#Combinations) topic. 
     - `grantType`: A string that specifies the grant type of the token request. Options are `authorization_code`, `implicit`(is set by default), and `client_credentials`. 

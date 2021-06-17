@@ -9,6 +9,7 @@ export default {
   // Specifies the application’s UUID.
   clientId: "<clientId>",
   // Specifies the application’s secret key
+  // Should be used only for testing purposes and not in production!!!
   clientSecret: "<clientSecret>",
   // Specifies the grant type of the token request. Options are authorization_code, implicit, and client_credentials
   grantType: "implicit",
