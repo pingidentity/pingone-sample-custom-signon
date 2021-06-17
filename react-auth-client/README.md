@@ -33,11 +33,13 @@ You will need the following things:
     Application name.
     - `clientSecret`: A string that specifies the the application’s client secret. This property is required if your application **is not a public client**. Plus make sure to set it if the following  the application’s `tokenEndpointAuthMethod` property is set to `CLIENT_SECRET_POST`. 
     
-        **WARNING:** This configuration could be used only for testing purposes. **Do not use `clientSecret` in production** since your application should not be a public client and do not reveal its secret anywhere.
+        **WARNING:** `clientSecret` should be used only for testing purposes. **Do not use `clientSecret` in production** since your application should not be a public client and should not reveal its secret anywhere.
     - `responseType`: A string that specifies the code or token type returned by an authorization request. Options are `token`, `id_token`, and `code`. The value **MUST** be the `code` for requesting an authorization code flow (`grantType=authorization_code`), `id_token token` for the implicit flow(`grantType=implicit`), or `code id_token` for hybrid flow (a scenario when you can have a long lived session in your application and get tokens back immediately from the authorization endpoint).
     For more variants please check [Definitions of Multiple-Valued Response Type Combinations](https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html#Combinations) topic. 
     - `grantType`: A string that specifies the grant type of the token request. Options are `authorization_code`, `implicit`(is set by default), and `client_credentials`. 
     For `authorization_code` or `client_credentials` grant types please follow this rules: `responseType=code` and `clientSecret` is necessary.
+    
+         **WARNING:** `client_credentials` should be used only for testing purposes. **Do not use `client_credentials` in production** since this configuration is about server to server flow, where the access token is being obtained outside of the context of a user. 
     - `redirectUri`: *Required*. The URL to which the PingOne will redirect the user's browser after authorization has been granted by the user. *REDIRECT URLS* values corresponds to this data. The Access and ID Token will be available in the hash fragment of this URL. 
     For simplicity this sample has it hardcoded as `http://localhost:3000/callback`, where `/callback` is handled by [callback react component](src/components/home.jsx)
     - `logoutRedirectUri`: The URL to which the browser is redirected after a logout has been performed. *SIGNOFF URLS* values corresponds to this data.
