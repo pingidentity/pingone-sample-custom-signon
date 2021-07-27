@@ -73,6 +73,12 @@ const getAccessToken = (code) => {
         `grant_type=${config.grantType}&code=${code}&client_id=${config.clientId}`
         + (config.clientSecret ? `&client_secret=${config.clientSecret}` : '')
         + (config.redirectUri ? `&redirect_uri=${config.redirectUri}` : ''));
+  } else if (_.isEqual(config.tokenEndpointAuthMethod, 'none')) {
+    return post(`${getBaseApiUrl(
+        true)}/${config.environmentId}/as/token`,
+        {'Content-Type': 'application/x-www-form-urlencoded'},
+        `grant_type=${config.grantType}&code=${code}&client_id=${config.clientId}`
+        + (config.redirectUri ? `&redirect_uri=${config.redirectUri}` : ''));
   } else {
     return post(`${getBaseApiUrl(
         true)}/${config.environmentId}/as/token`,
