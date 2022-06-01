@@ -3,14 +3,14 @@ export default {
    * Application authorization details. For more information check "Getting Started" in README.md
     */
   // Specifies the environment’s UUID.
-  environmentId: "<environmentId>",
+  environmentId: "b35d6923-a55b-451f-96e4-847b60e3babd",
   // Specifies the code or token type returned by an authorization request. Options are token, id_token, and code. Default values is "token id_token". This is a required property.
   responseType: "<responseType>",
   // Specifies the application’s UUID.
-  clientId: "<clientId>",
+  clientId: "9f9516c8-194f-4470-ad74-03d732e41d57",
   // Specifies the application’s secret key
   // Should be used only for testing purposes and not in production!!!
-  clientSecret: "<clientSecret>",
+  clientSecret: "qUE8VJUoZFMDglqIWCglUma1XlXY-OvAkRvl~ZuZQFiZTX1k.Dfh5VZrx7w-jZqj",
   // Specifies the grant type of the token request. Options are authorization_code, implicit, and client_credentials
   grantType: "implicit",
   // Specifies the URL that specifies the return entry point of the application. This is a required property.
