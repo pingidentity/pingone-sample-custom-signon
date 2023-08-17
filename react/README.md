@@ -20,7 +20,7 @@ PingOne supports several application types, but for this sample better to choose
 
 The application type determines the authorization flow steps needed to acquire an access token from the authorization service. 
 
-The following examples describe `authorization_code` and `implicit` [authorization flows](https://apidocs.pingidentity.com/pingone/platform/v1/api/#configure-an-application-with-an-authorization-code-grant) for the designated application type.
+The following examples describe `authorization_code` and `implicit` [authorization flows](https://apidocs.pingidentity.com/pingone/main/v1/api/#configure-an-application-with-an-authorization-code-grant) for the designated application type.
 
 
 __Authorization code grant type__
@@ -79,6 +79,8 @@ To add Facebook as the the external identity provider, please follow this steps:
 2. To change PingOne API public endpoints, application logo or [custom environment variables](https://facebook.github.io/create-react-app/docs/adding-custom-environment-variables)(i.e `REACT_APP_STAGE`), please navigate to [config.js](./src/config.js) file.
 3. Build a project by `npm install` or `yarn install`
 4. Start an application by `npm start` or `yarn start`
+5. 
+6. Modify the url by adding envId and flowId 
 
 
 ## PingOne APIs used in this sample

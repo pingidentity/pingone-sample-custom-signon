@@ -16,8 +16,8 @@ If successful, the __"Show user information"__ link will be present on the page 
 # Prerequisites 
 You will need the following things:
 
-- PingOne Account - If you don’t have an existing one, you can drop register for a trial at https://www.pingidentity.com/en/trials.html
-- A [PingOne application](https://documentation.pingidentity.com/pingone/p14cAdminGuide/index.shtml#p1_t_addApplication.html), configured for Single-Page App (SPA) or Native mode. Also make sure that it is enabled plus redirect, sign off URL's and access grants by scopes are properly set.
+- PingOne Account - If you don’t have an existing one, you can drop register for a trial at https://www.pingidentity.com/en/try-ping.html
+- A [PingOne application](https://docs.pingidentity.com/r/en-us/pingone/p1_add_app_worker), configured for Single-Page App (SPA) or Native mode. Also make sure that it is enabled plus redirect, sign off URL's and access grants by scopes are properly set.
 - Specify custom login page URL for the application in __SIGNON URL__ textbox of PingOne admin console. 
 
 # Getting Started
@@ -65,7 +65,7 @@ The following table shows the relationships between the application type attribu
 |    Endpoint   |    Description   |
 | ------------- |------------- |
 | [`POST /{environmentId}/as/authorize`](https://apidocs.pingidentity.com/pingone/platform/v1/api/#get-authorize-authorization_code) <br>  `prompt=login` parameter is used by default  | Authorization request with a code or implicit grant type.|
-| [`POST /{environmentId}/as/token`](https://apidocs.pingidentity.com/pingone/platform/v1/api/#post-token-authorization_code)  | Obtain an access token in authorization grant case|
+| [`POST /{environmentId}/as/token`](https://apidocs.pingidentity.com/pingone/platform/v1/api/#post-token-authorization_code-client_secret_post)  | Obtain an access token in authorization grant case|
 | [`GET /{environmentID}/as/signoff?id_token_hint={idToken}`](https://apidocs.pingidentity.com/pingone/platform/v1/api/#get-signoff) <br> if `post_logout_redirect_uri` parameter is provided and it does not match one of the `postLogoutRedirectUri` values of your application in the specified environment - it would be handled as an unpredictable error.  | Obtain an access token in authorization grant case|
 
 **Note:** For any application type (except non-interactive), you can specify either `none`, `client_secret_basic`, or `client_secret_post` as the `tokenEndpointAuthMethod` attribute value. Non-interactive applications use the `client_credentials` grant type, which does not support a `tokenEndpointAuthMethod` value of none.
